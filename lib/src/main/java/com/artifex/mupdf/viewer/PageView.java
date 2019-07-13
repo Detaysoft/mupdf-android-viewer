@@ -3,15 +3,14 @@ package com.artifex.mupdf.viewer;
 import com.artifex.mupdf.fitz.Cookie;
 import com.artifex.mupdf.fitz.Link;
 import com.artifex.mupdf.fitz.Quad;
+import com.artifex.mupdf.viewer.gp.GPAnnotationInfo;
+import com.artifex.mupdf.viewer.gp.webviews.ExtraWebViewActivity;
+import com.artifex.mupdf.viewer.gp.webviews.ViewAnnotation;
+import com.artifex.mupdf.viewer.gp.webviews.WebViewAnnotation;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-
-import android.annotation.TargetApi;
-import android.app.AlertDialog;
-import android.content.ClipData;
+import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap.Config;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -25,16 +24,19 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
-import android.text.method.PasswordTransformationMethod;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
-import android.widget.EditText;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.os.AsyncTask;
+import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 // Make our ImageViews opaque to optimize redraw
 class OpaqueImageView extends ImageView {
@@ -78,12 +80,15 @@ public class PageView extends ViewGroup {
 	private       CancellableAsyncTask<Void,Void> mDrawPatch;
 	private       Quad      mSearchBoxes[];
 	protected     Link      mLinks[];
+	protected	  ArrayList<GPAnnotationInfo> mGPLinks; // GalePress annotation links
 	private       View      mSearchView;
 	private       boolean   mIsBlank;
 	private       boolean   mHighlightLinks;
 
 	private       ProgressBar mBusyIndicator;
 	private final Handler   mHandler = new Handler();
+
+	AtomicInteger atomicInteger = new AtomicInteger(); // GalePress generates view ids
 
 	public PageView(Context c, MuPDFCore core, Point parentSize, Bitmap sharedHqBm) {
 		super(c);
@@ -134,6 +139,7 @@ public class PageView extends ViewGroup {
 
 		mSearchBoxes = null;
 		mLinks = null;
+		mGPLinks = null; // GalePress links
 	}
 
 	public void releaseResources() {
@@ -200,14 +206,25 @@ public class PageView extends ViewGroup {
 		mEntire.setImageBitmap(null);
 		mEntire.invalidate();
 
+		// needed for get link info
+		final PageView pageView = this;
+
 		// Get the link info in the background
 		mGetLinkInfo = new AsyncTask<Void,Void,Link[]>() {
+			@SuppressLint("WrongThread")
 			protected Link[] doInBackground(Void... v) {
 				return getLinkInfo();
 			}
 
+			@Override
+			protected void onPreExecute() {
+				// clear last annotations, it needed to prevent adding annotations over and over in different pages
+				clearSomeCoolAnnotationStaff(pageView);
+			}
+
 			protected void onPostExecute(Link[] v) {
 				mLinks = v;
+				someCoolAnnotationStaff();
 				if (mSearchView != null)
 					mSearchView.invalidate();
 			}
@@ -301,6 +318,287 @@ public class PageView extends ViewGroup {
 			mSearchView.invalidate();
 	}
 
+	//---------- GalePress Integration [Start]
+
+	private void clearSomeCoolAnnotationStaff(PageView pageView) {
+		clearGPWebAnnotations(pageView);
+		clearGPModals(pageView);
+		clearGPPageLinks(pageView);
+		clearGPWebLinks(pageView);
+
+		if (mGPLinks != null) {
+			mGPLinks.clear();
+		}
+	}
+
+	public ArrayList<View> getGPAnnotations(PageView pageView) {
+		ArrayList<View> gpAnnotations = new ArrayList<View>();
+		for (int i = 0; i < pageView.getChildCount(); i++) {
+			View view = (View) pageView.getChildAt(i);
+			if (view instanceof WebView) {
+				gpAnnotations.add(view);
+			}
+		}
+		return gpAnnotations;
+	}
+
+
+	public ArrayList<View> getGPCustomProgress(PageView pageView) {
+		ArrayList<View> gpprogress = new ArrayList<View>();
+		for (int i = 0; i < pageView.getChildCount(); i++) {
+			View view = (View) pageView.getChildAt(i);
+			if (view instanceof ProgressBar) {
+				gpprogress.add(view);
+			}
+		}
+		return gpprogress;
+	}
+
+	public ArrayList<View> getGPModals(PageView pageView) {
+		ArrayList<View> modals = new ArrayList<View>();
+		for (int i = 0; i < pageView.getChildCount(); i++) {
+			View view = (View) pageView.getChildAt(i);
+			if (view.getTag() != null && view.getTag().toString().compareTo("modal") == 0) {
+				modals.add(view);
+			}
+		}
+		return modals;
+	}
+
+	public ArrayList<View> getGPPageLinks(PageView pageView) {
+		ArrayList<View> modals = new ArrayList<View>();
+		for (int i = 0; i < pageView.getChildCount(); i++) {
+			View view = (View) pageView.getChildAt(i);
+			if (view.getTag() != null && view.getTag().toString().compareTo("pagelink") == 0) {
+				modals.add(view);
+			}
+		}
+		return modals;
+	}
+
+	public ArrayList<View> getGPWebLinks(PageView pageView) {
+		ArrayList<View> modals = new ArrayList<View>();
+		for (int i = 0; i < pageView.getChildCount(); i++) {
+			View view = (View) pageView.getChildAt(i);
+			if (view.getTag() != null && view.getTag().toString().compareTo("weblink") == 0) {
+				modals.add(view);
+			}
+		}
+		return modals;
+	}
+
+	/*
+	 * Interaktif iceriklerin temizlenmesi
+	 **/
+	private void clearGPWebAnnotations(PageView pageView) {
+		ArrayList<View> gpAnnotations = getGPAnnotations(pageView);
+
+		for (int i = 0; i < gpAnnotations.size(); i++) {
+
+			View view = gpAnnotations.get(i);
+
+			if (view instanceof WebView) {
+				WebView webView = (WebView) view;
+				webView.loadUrl("");
+				webView.stopLoading();
+
+				try {
+					Class.forName("android.webkit.WebView")
+							.getMethod("onPause", (Class[]) null)
+							.invoke(webView, (Object[]) null);
+
+				} catch (Exception cnfe) {
+					cnfe.printStackTrace();
+				}
+
+				webView.destroy();
+				pageView.removeView(view);
+				pageView.invalidate();
+			}
+
+		}
+	}
+
+	/*
+	 * Modallarin sayfadan temizlenmesi
+	 * */
+	public void clearGPModals(PageView pageView){
+		ArrayList<View> modals = getGPModals(pageView);
+		for(int i=0; i < modals.size(); i++){
+			View view = modals.get(i);
+			pageView.removeView(view);
+			pageView.invalidate();
+		}
+	}
+
+	/*
+	 * PageLinklerin sayfadan temizlenmesi
+	 * */
+	public void clearGPPageLinks(PageView pageView){
+		ArrayList<View> pageLinks = getGPPageLinks(pageView);
+		for(int i=0; i < pageLinks.size(); i++){
+			View view = pageLinks.get(i);
+			pageView.removeView(view);
+			pageView.invalidate();
+		}
+	}
+
+	/*
+	 * WebLinklerin sayfadan temizlenmesi
+	 * */
+	public void clearGPWebLinks(PageView pageView){
+		ArrayList<View> webLinks = getGPWebLinks(pageView);
+		for(int i=0; i < webLinks.size(); i++){
+			View view = webLinks.get(i);
+			pageView.removeView(view);
+			pageView.invalidate();
+		}
+	}
+
+	private void someCoolAnnotationStaff() {
+
+		if (mContext == null || mLinks == null)
+			return;
+
+		if (mGPLinks == null) {
+			mGPLinks = new ArrayList<GPAnnotationInfo>();
+		}
+		/*
+		 * interaktif iceriklerin bilgileri alinana kadar activity'nin kapatilmasi durumu kontrol ediliyor.
+		 * */
+		final float scale = mSourceScale*(float)getWidth()/(float)mSize.x;
+
+		for (Link l : mLinks){
+			if (l.uri == null)
+				continue;
+
+			final GPAnnotationInfo link = new GPAnnotationInfo(l);
+			mGPLinks.add(link);
+
+			final int left = (int)(l.bounds.x0 * scale);
+			final int top = (int) (l.bounds.y0 * scale);
+			int right = (int) (l.bounds.x1 * scale);
+			int bottom = (int) (l.bounds.y1 * scale);
+
+			if(!link.isInternal && !link.isModal) {
+				Log.e("mGetLinkInfo", "modal and internal link");
+			}
+			else {
+				Log.e("mGetLinkInfo", "Not a modal and internal link");
+			}
+
+			if((link.isWebAnnotation())){
+				if(link.isModal){
+					Button modalButton = new Button(mContext);
+					modalButton.layout(left,top,right,bottom);
+					modalButton.setBackgroundColor(Color.TRANSPARENT);
+					modalButton.setTag("modal");
+					modalButton.setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							Intent intent = new Intent(mContext, ExtraWebViewActivity.class);
+							intent.putExtra("url", link.getSourceUrlPath(mContext)); // daha once linkInfoExternal.sourceurl vardi o nedenle modal acilmiyordu
+							intent.putExtra("isModal", true);
+							mContext.startActivity(intent);
+						}
+					});
+					addView(modalButton);
+				}
+				else{
+					String url = link.getSourceUrlPath(mContext);
+
+					// Web Annotations
+					final WebViewAnnotation web = new WebViewAnnotation(mContext, link, null);
+					web.layout(left, top, right, bottom);
+					web.setLayoutParams(new ViewGroup.LayoutParams(right - left, bottom - top));
+					web.readerView = ((DocumentActivity) mContext).getReaderView();
+					web.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+
+					web.setId(atomicInteger.incrementAndGet());
+					link.webViewId = web.getId();
+
+					if (link.isWebAnnotation()) {
+						web.loadUrl(url);
+					}
+					addView(web);
+
+				}
+			}
+			else if((((GPAnnotationInfo) link).componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_MAP) ){
+				// Map Annotations
+				// http://adem.me/map/index.html?lat=41.033621&lon=28.952785&zoom=16&w=400&h=300&mapType=0
+				Uri.Builder builder = new Uri.Builder();
+				builder.scheme("http");
+				builder.authority("www.galepress.com");
+				builder.appendPath("files");
+				builder.appendPath("map_html");
+				builder.appendPath("index.html");
+				builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
+				builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
+				builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
+				builder.appendQueryParameter("w",String.valueOf(right-left));
+				builder.appendQueryParameter("h",String.valueOf(bottom-top));
+				builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+				String mapUrl = builder.build().toString();
+
+
+				// Web Annotations
+				final WebViewAnnotation web = new WebViewAnnotation(mContext, link, null);
+				web.layout(left, top, right, bottom);
+				web.setLayoutParams(new ViewGroup.LayoutParams(right - left, bottom - top));
+				web.readerView = ((DocumentActivity) mContext).getReaderView();
+				web.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+
+				web.setId(atomicInteger.incrementAndGet());
+				link.webViewId = web.getId();
+				web.loadUrl(mapUrl);
+				addView(web);
+			}
+			else if(((GPAnnotationInfo) link).componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_WEBLINK){
+				final boolean isMailto = ((GPAnnotationInfo) link).isMailto;
+				ViewAnnotation view = new ViewAnnotation(mContext, ((GPAnnotationInfo) link));
+				view.layout(left,top,right,bottom);
+				view.setBackgroundColor(Color.TRANSPARENT);
+				view.setTag("weblink");
+				view.readerView = ((DocumentActivity) mContext).getReaderView();
+				view.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						if(isMailto) {
+							Intent intent = new Intent(Intent.ACTION_SEND);
+							intent.setType("message/rfc822");
+							//intent.setType("text/html");
+							intent.putExtra(Intent.EXTRA_EMAIL, new String[]{link.url});
+							intent.putExtra(Intent.EXTRA_SUBJECT, " ");
+							intent.putExtra(Intent.EXTRA_TEXT, " ");
+							try {
+								mContext.startActivity(Intent.createChooser(intent, "Send mail..."));
+							} catch (android.content.ActivityNotFoundException ex) {
+								Toast.makeText(mContext, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
+							}
+						} else {
+							Intent intent = new Intent(mContext, ExtraWebViewActivity.class);
+							intent.putExtra("url",link.url);
+							intent.putExtra("isModal", true);
+							mContext.startActivity(intent);
+						}
+
+					}
+				});
+				addView(view);
+			}
+
+			if(!link.isInternal && !link.isModal) {
+				// addView(progressBar);
+			}
+		}
+
+		if (mSearchView != null)
+			mSearchView.invalidate();
+	}
+
+	//---------- GalePress Integration [END]
+
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		int x, y;
@@ -365,6 +663,66 @@ public class PageView extends ViewGroup {
 
 			mBusyIndicator.layout((w-bw)/2, (h-bh)/2, (w+bw)/2, (h+bh)/2);
 		}
+
+		//---------- GalePress Integration [Start]
+		// Scale annotations
+
+		if (mGPLinks != null) {
+			{
+				PageView pageView = (PageView) this;
+				for (int i = 0; i < pageView.getChildCount(); i++) {
+					View view = pageView.getChildAt(i);
+
+					if (view instanceof WebView) { //Annotation viewlar WebView
+						float original_x;
+						float original_y;
+						if (pageView.mGPLinks != null) {
+							for (GPAnnotationInfo link : pageView.mGPLinks) {
+								if (((GPAnnotationInfo) link).webViewId == view.getId()) {
+
+									original_x = link.muPdfLink.bounds.x0 * pageView.mSourceScale;
+									original_y = link.muPdfLink.bounds.y0 * pageView.mSourceScale;
+									view.setPivotX(0);
+									view.setPivotY(0);
+									view.setX(original_x * w/(float)mSize.x);
+									view.setY(original_y * h/(float)mSize.y);
+									view.setScaleX(w/(float)mSize.x);
+									view.setScaleY(h/(float)mSize.y);
+									view.invalidate();
+								}
+							}
+						}
+					} else if (view instanceof ProgressBar) { //interaktif icerikler uzerindeki animasyon view
+
+						float original_x;
+						float original_y;
+						int progressSize = 40;
+						ProgressBar progress = (ProgressBar) view;
+						if (pageView.mGPLinks != null) {
+							for (GPAnnotationInfo link : pageView.mGPLinks) {
+								if (link.webViewId == view.getId()) {
+									original_x = (link.muPdfLink.bounds.x0 + link.muPdfLink.bounds.x1) / 2 * pageView.mSourceScale - progressSize / 2;
+									original_y = (link.muPdfLink.bounds.y0 + link.muPdfLink.bounds.y1) / 2 * pageView.mSourceScale - progressSize / 2;
+									progress.setPivotX(0);
+									progress.setPivotY(0);
+									progress.setX(original_x * w/(float)mSize.x);
+									progress.setY(original_y * h/(float)mSize.y);
+									progress.setScaleX(w/(float)mSize.x);
+									progress.setScaleY(h/(float)mSize.y);
+
+									progress.invalidate();
+								}
+							}
+						}
+
+					}
+				}
+				requestLayout();
+			}
+
+		}
+
+		//---------- GalePress Integration [End]
 	}
 
 	public void updateHq(boolean update) {

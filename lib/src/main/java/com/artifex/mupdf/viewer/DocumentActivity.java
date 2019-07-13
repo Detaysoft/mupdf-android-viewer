@@ -485,6 +485,19 @@ public class DocumentActivity extends Activity
 		setContentView(layout);
 	}
 
+	//---------- GalePress Integration [Start]
+
+	// Temporary content id for test
+	public String getContentId() {
+		return "100069";
+	}
+
+	public ReaderView getReaderView() {
+		return mDocView;
+	}
+
+	//---------- GalePress Integration [End]
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		switch (requestCode) {

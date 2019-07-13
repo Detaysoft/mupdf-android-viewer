@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.artifex.mupdf.viewer"
 	>
+	<uses-permission android:name="android.permission.INTERNET" />
 	<application>
 		<activity
 			android:name=".DocumentActivity"
@@ -35,5 +36,9 @@
 			android:configChanges="orientation|screenSize|keyboardHidden"
 			>
 		</activity>
+		<activity
+			android:name=".gp.webviews.ExtraWebViewActivity"
+			android:configChanges="orientation|screenSize"
+			android:label="GalePress" />
 	</application>
 </manifest>
