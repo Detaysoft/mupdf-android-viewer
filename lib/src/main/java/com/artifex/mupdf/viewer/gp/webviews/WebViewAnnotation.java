@@ -19,6 +19,7 @@ import android.widget.ProgressBar;
 import com.artifex.mupdf.viewer.gp.GPAnnotationInfo;
 import com.artifex.mupdf.viewer.PageView;
 import com.artifex.mupdf.viewer.ReaderView;
+import com.artifex.mupdf.viewer.gp.util.CustomPulseProgress;
 
 /**
  * Created by adem on 08/08/14.
@@ -30,7 +31,7 @@ public class WebViewAnnotation extends WebView {
     public float left, top ;
     public ReaderView readerView;
     public GPAnnotationInfo linkInfoExternal;
-    private ProgressBar loading;
+    private CustomPulseProgress loading;
     private Context context;
 
     /*
@@ -121,7 +122,7 @@ public class WebViewAnnotation extends WebView {
     public boolean isHorizontalScrolling, isDummyAction;
     private MotionEvent previousMotionEvent;
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-    public WebViewAnnotation(Context context, GPAnnotationInfo lie, ProgressBar loading) {
+    public WebViewAnnotation(Context context, GPAnnotationInfo lie, CustomPulseProgress loading) {
         super(context);
 
         Log.e("testtest", ""+lie.url);

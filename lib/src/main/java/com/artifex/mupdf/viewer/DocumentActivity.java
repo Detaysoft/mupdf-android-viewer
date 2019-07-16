@@ -39,6 +39,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ViewAnimator;
 
+import com.artifex.mupdf.viewer.gp.util.ThemeColor;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,6 +49,8 @@ import java.util.Locale;
 
 public class DocumentActivity extends Activity
 {
+	public final static String EXTRA_THEME_TYPE = "themeType";
+	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
 	/* The core rendering instance */
 	enum TopBarMode {Main, Search, More};
 
@@ -148,6 +152,18 @@ public class DocumentActivity extends Activity
 		}
 		if (core == null) {
 			Intent intent = getIntent();
+
+			//---------- GalePress Integration [Start]
+			String foregroundColor = intent.getStringExtra(EXTRA_FOREGROUND_THEME_COLOR);
+			if (foregroundColor != null) {
+				ThemeColor.getInstance().setForegroundColor(foregroundColor);
+			}
+
+			int themeType = intent.getIntExtra(EXTRA_THEME_TYPE, 1);
+			ThemeColor.getInstance().setThemeType(themeType);
+
+			//---------- GalePress Integration [End]
+
 			byte buffer[] = null;
 
 			if (Intent.ACTION_VIEW.equals(intent.getAction())) {

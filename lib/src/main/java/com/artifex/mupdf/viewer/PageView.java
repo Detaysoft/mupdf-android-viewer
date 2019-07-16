@@ -4,6 +4,7 @@ import com.artifex.mupdf.fitz.Cookie;
 import com.artifex.mupdf.fitz.Link;
 import com.artifex.mupdf.fitz.Quad;
 import com.artifex.mupdf.viewer.gp.GPAnnotationInfo;
+import com.artifex.mupdf.viewer.gp.util.CustomPulseProgress;
 import com.artifex.mupdf.viewer.gp.webviews.ExtraWebViewActivity;
 import com.artifex.mupdf.viewer.gp.webviews.ViewAnnotation;
 import com.artifex.mupdf.viewer.gp.webviews.WebViewAnnotation;
@@ -325,6 +326,7 @@ public class PageView extends ViewGroup {
 		clearGPModals(pageView);
 		clearGPPageLinks(pageView);
 		clearGPWebLinks(pageView);
+		clearCustomProgress(pageView);
 
 		if (mGPLinks != null) {
 			mGPLinks.clear();
@@ -347,7 +349,7 @@ public class PageView extends ViewGroup {
 		ArrayList<View> gpprogress = new ArrayList<View>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
 			View view = (View) pageView.getChildAt(i);
-			if (view instanceof ProgressBar) {
+			if (view instanceof CustomPulseProgress) {
 				gpprogress.add(view);
 			}
 		}
@@ -455,17 +457,33 @@ public class PageView extends ViewGroup {
 		}
 	}
 
-	private void someCoolAnnotationStaff() {
+	/*
+	 * Custom loading animasyonunun temizlenmesi
+	 * */
+	public void clearCustomProgress(PageView pageView){
+		ArrayList<View> gpAnnotations = getGPCustomProgress(pageView);
+		for(int i=0; i < gpAnnotations.size(); i++){
+			View view = gpAnnotations.get(i);
+			pageView.removeView(view);
+			pageView.invalidate();
+		}
+	}
 
+	/*
+	 * Interaktif iceriklerin sayfaya eklenmesi
+	 * */
+	private void someCoolAnnotationStaff() {
+		/*
+		 * interaktif iceriklerin bilgileri alinana kadar activity'nin kapatilmasi durumu
+		 * ve interaktif iceriklerin varligi kontrol ediliyor.
+		 * */
 		if (mContext == null || mLinks == null)
 			return;
 
 		if (mGPLinks == null) {
 			mGPLinks = new ArrayList<GPAnnotationInfo>();
 		}
-		/*
-		 * interaktif iceriklerin bilgileri alinana kadar activity'nin kapatilmasi durumu kontrol ediliyor.
-		 * */
+
 		final float scale = mSourceScale*(float)getWidth()/(float)mSize.x;
 
 		for (Link l : mLinks){
@@ -480,11 +498,18 @@ public class PageView extends ViewGroup {
 			int right = (int) (l.bounds.x1 * scale);
 			int bottom = (int) (l.bounds.y1 * scale);
 
+			CustomPulseProgress progressBar;
+
 			if(!link.isInternal && !link.isModal) {
 				Log.e("mGetLinkInfo", "modal and internal link");
+				int progressSize = 40;
+				progressBar = new CustomPulseProgress(mContext);
+				progressBar.layout((left+right)/2 - progressSize/2, (top+bottom)/2 - progressSize/2, (left+right)/2+progressSize, (top+bottom)/2+progressSize);
+
 			}
 			else {
 				Log.e("mGetLinkInfo", "Not a modal and internal link");
+				progressBar = null;
 			}
 
 			if((link.isWebAnnotation())){
@@ -508,7 +533,7 @@ public class PageView extends ViewGroup {
 					String url = link.getSourceUrlPath(mContext);
 
 					// Web Annotations
-					final WebViewAnnotation web = new WebViewAnnotation(mContext, link, null);
+					final WebViewAnnotation web = new WebViewAnnotation(mContext, link, progressBar);
 					web.layout(left, top, right, bottom);
 					web.setLayoutParams(new ViewGroup.LayoutParams(right - left, bottom - top));
 					web.readerView = ((DocumentActivity) mContext).getReaderView();
@@ -543,7 +568,7 @@ public class PageView extends ViewGroup {
 
 
 				// Web Annotations
-				final WebViewAnnotation web = new WebViewAnnotation(mContext, link, null);
+				final WebViewAnnotation web = new WebViewAnnotation(mContext, link, progressBar);
 				web.layout(left, top, right, bottom);
 				web.setLayoutParams(new ViewGroup.LayoutParams(right - left, bottom - top));
 				web.readerView = ((DocumentActivity) mContext).getReaderView();
@@ -589,7 +614,7 @@ public class PageView extends ViewGroup {
 			}
 
 			if(!link.isInternal && !link.isModal) {
-				// addView(progressBar);
+				addView(progressBar);
 			}
 		}
 
@@ -692,12 +717,12 @@ public class PageView extends ViewGroup {
 								}
 							}
 						}
-					} else if (view instanceof ProgressBar) { //interaktif icerikler uzerindeki animasyon view
+					} else if (view instanceof CustomPulseProgress) { //interaktif icerikler uzerindeki animasyon view
 
 						float original_x;
 						float original_y;
 						int progressSize = 40;
-						ProgressBar progress = (ProgressBar) view;
+						CustomPulseProgress progress = (CustomPulseProgress) view;
 						if (pageView.mGPLinks != null) {
 							for (GPAnnotationInfo link : pageView.mGPLinks) {
 								if (link.webViewId == view.getId()) {
@@ -717,7 +742,7 @@ public class PageView extends ViewGroup {
 
 					}
 				}
-				requestLayout();
+				// requestLayout();
 			}
 
 		}
