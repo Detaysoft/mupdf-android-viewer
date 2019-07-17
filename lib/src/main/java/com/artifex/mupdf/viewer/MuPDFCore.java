@@ -14,6 +14,7 @@ import com.artifex.mupdf.fitz.android.AndroidDrawDevice;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.graphics.PointF;
 
 import java.util.ArrayList;
@@ -195,5 +196,26 @@ public class MuPDFCore
 
 	public synchronized boolean authenticatePassword(String password) {
 		return doc.authenticatePassword(password);
+	}
+
+	/*
+	 * returns pdf page thumbnail bitmaps
+	 */
+	public Bitmap[] getPDFThumbnails(int w, int h){
+
+		int pageCount = countPages();
+		Bitmap[] thumbnails = new Bitmap[pageCount];
+
+		for (int i = 0; i < pageCount; i++) {
+			PointF pageSize = getPageSize(i);
+			float mSourceScale = Math.max(w/pageSize.x, h/pageSize.y);
+
+			Point size = new Point((int)(pageSize.x*mSourceScale), (int)(pageSize.y*mSourceScale));
+			final Bitmap bp = Bitmap.createBitmap(size.x,size.y, Bitmap.Config.ARGB_8888);
+
+			drawPage(bp,i,size.x, size.y, 0, 0, size.x, size.y,new Cookie());
+			thumbnails[i] = bp;
+		}
+		return thumbnails;
 	}
 }

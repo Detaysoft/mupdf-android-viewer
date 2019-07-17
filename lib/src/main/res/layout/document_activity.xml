@@ -126,10 +126,17 @@
 	<RelativeLayout
 		android:id="@+id/lowerButtons"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
+		android:layout_height="120dp"
 		android:layout_alignParentBottom="true"
 		android:layout_centerHorizontal="true"
 		>
+
+		<android.support.v7.widget.RecyclerView
+			android:id="@+id/recyclerPagePreview"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:orientation="horizontal"
+			android:background="@android:color/black"/>
 
 		<SeekBar
 			android:id="@+id/pageSlider"

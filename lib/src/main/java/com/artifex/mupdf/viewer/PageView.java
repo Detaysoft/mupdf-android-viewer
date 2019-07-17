@@ -734,7 +734,6 @@ public class PageView extends ViewGroup {
 									progress.setY(original_y * h/(float)mSize.y);
 									progress.setScaleX(w/(float)mSize.x);
 									progress.setScaleY(h/(float)mSize.y);
-
 									progress.invalidate();
 								}
 							}

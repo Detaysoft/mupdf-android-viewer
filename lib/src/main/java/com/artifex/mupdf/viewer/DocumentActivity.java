@@ -8,22 +8,22 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
-import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.Rect;
-import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.RectShape;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.Menu;
-import android.view.MenuItem.OnMenuItemClickListener;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -39,6 +39,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ViewAnimator;
 
+import com.artifex.mupdf.viewer.gp.RecyclerAdapter;
+import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 
 import java.io.ByteArrayOutputStream;
@@ -75,6 +77,12 @@ public class DocumentActivity extends Activity
 	private ImageButton  mSearchClose;
 	private EditText     mSearchText;
 	private SearchTask   mSearchTask;
+
+	// GP recycler page preview
+	private RecyclerView mRecyclerPagePreview;
+	private RecyclerAdapter mRecyclerPagePreviewAdapter;
+	private LinearLayoutManager mRecylerPagePreviewLayoutManager;
+
 	private AlertDialog.Builder mAlertBuilder;
 	private boolean    mLinkHighlight = false;
 	private final Handler mHandler = new Handler();
@@ -150,6 +158,7 @@ public class DocumentActivity extends Activity
 				mFileName = savedInstanceState.getString("FileName");
 			}
 		}
+
 		if (core == null) {
 			Intent intent = getIntent();
 
@@ -284,8 +293,12 @@ public class DocumentActivity extends Activity
 					return;
 
 				mPageNumberView.setText(String.format(Locale.ROOT, "%d / %d", i + 1, core.countPages()));
+
+				/*
+				TODO: implement for recycler page preview
 				mPageSlider.setMax((core.countPages() - 1) * mPageSliderRes);
 				mPageSlider.setProgress(i * mPageSliderRes);
+				*/
 				super.onMoveToChild(i);
 			}
 
@@ -344,6 +357,28 @@ public class DocumentActivity extends Activity
 		else
 			mFilenameView.setText(mFileName);
 
+		//---------- GalePress recycle page preview [Start]
+
+		mRecylerPagePreviewLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
+		mRecyclerPagePreview.setLayoutManager(mRecylerPagePreviewLayoutManager);
+
+		ArrayList<PagePreview> ppList = new ArrayList<>();
+
+		PagePreview[] ppArray = new PagePreview[core.countPages()];
+		Bitmap[] pageThumbnails = core.getPDFThumbnails(60, 90);
+
+		for (int i = 0; i < core.countPages(); i++) {
+			ppArray[i] = new PagePreview(i, pageThumbnails[i]);
+		}
+
+		mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray);
+		mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
+
+		//---------- GalePress recycle page preview [End]
+
+		/*
+		TODO: implement for recycler page preview
 		// Activate the seekbar
 		mPageSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 			public void onStopTrackingTouch(SeekBar seekBar) {
@@ -358,6 +393,8 @@ public class DocumentActivity extends Activity
 				updatePageNumView((progress+mPageSliderRes/2)/mPageSliderRes);
 			}
 		});
+
+		*/
 
 		// Activate the search-preparing button
 		mSearchButton.setOnClickListener(new View.OnClickListener() {
@@ -602,8 +639,17 @@ public class DocumentActivity extends Activity
 			// Update page number text and slider
 			int index = mDocView.getDisplayedViewIndex();
 			updatePageNumView(index);
+
+			/*
+			TODO: implement for recycler page preview
 			mPageSlider.setMax((core.countPages()-1)*mPageSliderRes);
 			mPageSlider.setProgress(index * mPageSliderRes);
+			*/
+
+			// GP scroll to displaying page
+			// TODO: offset parameter needs to be dynamic
+			mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
+
 			if (mTopBarMode == TopBarMode.Search) {
 				mSearchText.requestFocus();
 				showKeyboard();
@@ -620,18 +666,18 @@ public class DocumentActivity extends Activity
 			});
 			mTopBarSwitcher.startAnimation(anim);
 
-			anim = new TranslateAnimation(0, 0, mPageSlider.getHeight(), 0);
+			anim = new TranslateAnimation(0, 0, mRecyclerPagePreview.getHeight(), 0);
 			anim.setDuration(200);
 			anim.setAnimationListener(new Animation.AnimationListener() {
 				public void onAnimationStart(Animation animation) {
-					mPageSlider.setVisibility(View.VISIBLE);
+					mRecyclerPagePreview.setVisibility(View.VISIBLE);
 				}
 				public void onAnimationRepeat(Animation animation) {}
 				public void onAnimationEnd(Animation animation) {
 					mPageNumberView.setVisibility(View.VISIBLE);
 				}
 			});
-			mPageSlider.startAnimation(anim);
+			mRecyclerPagePreview.startAnimation(anim);
 		}
 	}
 
@@ -651,7 +697,7 @@ public class DocumentActivity extends Activity
 			});
 			mTopBarSwitcher.startAnimation(anim);
 
-			anim = new TranslateAnimation(0, 0, 0, mPageSlider.getHeight());
+			anim = new TranslateAnimation(0, 0, 0, mRecyclerPagePreview.getHeight());
 			anim.setDuration(200);
 			anim.setAnimationListener(new Animation.AnimationListener() {
 				public void onAnimationStart(Animation animation) {
@@ -659,10 +705,10 @@ public class DocumentActivity extends Activity
 				}
 				public void onAnimationRepeat(Animation animation) {}
 				public void onAnimationEnd(Animation animation) {
-					mPageSlider.setVisibility(View.INVISIBLE);
+					mRecyclerPagePreview.setVisibility(View.INVISIBLE);
 				}
 			});
-			mPageSlider.startAnimation(anim);
+			mRecyclerPagePreview.startAnimation(anim);
 		}
 	}
 
@@ -698,6 +744,7 @@ public class DocumentActivity extends Activity
 		mButtonsView = getLayoutInflater().inflate(R.layout.document_activity, null);
 		mFilenameView = (TextView)mButtonsView.findViewById(R.id.docNameText);
 		mPageSlider = (SeekBar)mButtonsView.findViewById(R.id.pageSlider);
+		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
 		mPageNumberView = (TextView)mButtonsView.findViewById(R.id.pageNumber);
 		mSearchButton = (ImageButton)mButtonsView.findViewById(R.id.searchButton);
 		mOutlineButton = (ImageButton)mButtonsView.findViewById(R.id.outlineButton);
@@ -708,10 +755,13 @@ public class DocumentActivity extends Activity
 		mSearchText = (EditText)mButtonsView.findViewById(R.id.searchText);
 		mLinkButton = (ImageButton)mButtonsView.findViewById(R.id.linkButton);
 		mLayoutButton = mButtonsView.findViewById(R.id.layoutButton);
+
 		mTopBarSwitcher.setVisibility(View.INVISIBLE);
 		mPageNumberView.setVisibility(View.INVISIBLE);
 
-		mPageSlider.setVisibility(View.INVISIBLE);
+		// GP recycler page preview
+		mRecyclerPagePreview.setVisibility(View.INVISIBLE);
+		mPageSlider.setVisibility(View.GONE);
 	}
 
 	private void showKeyboard() {
