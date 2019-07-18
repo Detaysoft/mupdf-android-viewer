@@ -124,6 +124,25 @@
 	</ViewAnimator>
 
 	<RelativeLayout
+		android:layout_width="70dp"
+		android:layout_height="70dp"
+		android:id="@+id/readerShowPageThumbnailsButton"
+		android:layout_centerHorizontal="true"
+		android:layout_alignParentBottom="true"
+		android:gravity="center"
+		android:background="@android:color/transparent"
+		android:visibility="invisible">
+
+		<ImageView
+			android:layout_width="45dp"
+			android:layout_height="45dp"
+			android:id="@+id/readerShowPageThumbnailsButtonImg"
+			android:src="@drawable/reader_thumb_menu_arrow"
+			android:layout_centerInParent="true" />
+
+	</RelativeLayout>
+
+	<RelativeLayout
 		android:id="@+id/lowerButtons"
 		android:layout_width="match_parent"
 		android:layout_height="130dp"

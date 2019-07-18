@@ -13,7 +13,6 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.NonNull;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -23,19 +22,19 @@ import android.util.DisplayMetrics;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.ViewAnimator;
 
@@ -75,6 +74,10 @@ public class DocumentActivity extends Activity
 	private EditText     mSearchText;
 	private SearchTask   mSearchTask;
 
+	// GP reader show buttons button
+	private RelativeLayout mReaderShowPageThumbnailsButton;
+	private ImageView mReaderShowPageThumbnailsButtonImg;
+
 	// GP recycler page preview
 	private RecyclerView mRecyclerPagePreview;
 	private RecyclerAdapter mRecyclerPagePreviewAdapter;
@@ -91,6 +94,9 @@ public class DocumentActivity extends Activity
 	private int mLayoutEM = 10;
 	private int mLayoutW = 312;
 	private int mLayoutH = 504;
+
+	// page thumbnail show button scale animation replay count
+	private int scaleAnimationReplayCount = 3;
 
 	protected View mLayoutButton;
 	protected PopupMenu mLayoutPopupMenu;
@@ -500,10 +506,9 @@ public class DocumentActivity extends Activity
 		SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 		mDocView.setDisplayedViewIndex(prefs.getInt("page"+mFileName, 0));
 
-		// GalePress don't show buttons in first open
-		// TODO: instead show a button to let user know there are buttons
-		// if (savedInstanceState == null || !savedInstanceState.getBoolean("ButtonsHidden", false))
-		//	showButtons();
+		// GalePress don't show buttons in first open instead show a button to let user know there are buttons
+		 if (savedInstanceState == null || !savedInstanceState.getBoolean("ButtonsHidden", false))
+			scaleAnimation();
 
 		if(savedInstanceState != null && savedInstanceState.getBoolean("SearchMode", false))
 			searchModeOn();
@@ -646,8 +651,25 @@ public class DocumentActivity extends Activity
 				showKeyboard();
 			}
 
-			Animation anim = new TranslateAnimation(0, 0, -mTopBarSwitcher.getHeight(), 0);
-			anim.setDuration(200);
+
+			// GalePress animate show reader bottom thumbnail (up arrow) button
+			Animation anim = new TranslateAnimation(0, 0, 0, mReaderShowPageThumbnailsButton.getHeight());
+			anim.setDuration(250);
+			anim.setAnimationListener(new Animation.AnimationListener() {
+
+				public void onAnimationStart(Animation animation) {
+					mReaderShowPageThumbnailsButton.setVisibility(View.GONE);
+				}
+
+				public void onAnimationRepeat(Animation animation) {}
+
+				public void onAnimationEnd(Animation animation) {}
+			});
+			mReaderShowPageThumbnailsButton.startAnimation(anim);
+
+			anim = new TranslateAnimation(0, 0, -mTopBarSwitcher.getHeight(), 0);
+			anim.setStartOffset(200);
+			anim.setDuration(250);
 			anim.setAnimationListener(new Animation.AnimationListener() {
 				public void onAnimationStart(Animation animation) {
 					mTopBarSwitcher.setVisibility(View.VISIBLE);
@@ -658,15 +680,17 @@ public class DocumentActivity extends Activity
 			mTopBarSwitcher.startAnimation(anim);
 
 			anim = new TranslateAnimation(0, 0, mRecyclerPagePreview.getHeight(), 0);
-			anim.setDuration(200);
+			anim.setStartOffset(200);
+			anim.setDuration(250);
 			anim.setAnimationListener(new Animation.AnimationListener() {
+
 				public void onAnimationStart(Animation animation) {
 					mRecyclerPagePreview.setVisibility(View.VISIBLE);
 				}
+
 				public void onAnimationRepeat(Animation animation) {}
-				public void onAnimationEnd(Animation animation) {
-					// TODO: arrow button
-				}
+
+				public void onAnimationEnd(Animation animation) {}
 			});
 			mRecyclerPagePreview.startAnimation(anim);
 		}
@@ -678,10 +702,13 @@ public class DocumentActivity extends Activity
 			hideKeyboard();
 
 			Animation anim = new TranslateAnimation(0, 0, 0, -mTopBarSwitcher.getHeight());
-			anim.setDuration(200);
+			anim.setDuration(250);
 			anim.setAnimationListener(new Animation.AnimationListener() {
+
 				public void onAnimationStart(Animation animation) {}
+
 				public void onAnimationRepeat(Animation animation) {}
+
 				public void onAnimationEnd(Animation animation) {
 					mTopBarSwitcher.setVisibility(View.INVISIBLE);
 				}
@@ -689,17 +716,36 @@ public class DocumentActivity extends Activity
 			mTopBarSwitcher.startAnimation(anim);
 
 			anim = new TranslateAnimation(0, 0, 0, mRecyclerPagePreview.getHeight());
-			anim.setDuration(200);
+			anim.setDuration(250);
 			anim.setAnimationListener(new Animation.AnimationListener() {
-				public void onAnimationStart(Animation animation) {
-					// TODO: arrow button
-				}
+
+				public void onAnimationStart(Animation animation) {}
+
 				public void onAnimationRepeat(Animation animation) {}
+
 				public void onAnimationEnd(Animation animation) {
 					mRecyclerPagePreview.setVisibility(View.INVISIBLE);
 				}
 			});
 			mRecyclerPagePreview.startAnimation(anim);
+
+			// GalePress animate show reader bottom thumbnail (up arrow) button
+			anim = new TranslateAnimation(0, 0, mReaderShowPageThumbnailsButton.getHeight(), 0);
+			anim.setStartOffset(250);
+			anim.setDuration(250);
+			anim.setAnimationListener(new Animation.AnimationListener() {
+
+				public void onAnimationStart(Animation animation) {
+					mReaderShowPageThumbnailsButton.setVisibility(View.VISIBLE);
+				}
+
+				public void onAnimationRepeat(Animation animation) {}
+
+				public void onAnimationEnd(Animation animation) {
+					scaleAnimation();
+				}
+			});
+			mReaderShowPageThumbnailsButton.startAnimation(anim);
 		}
 	}
 
@@ -739,6 +785,18 @@ public class DocumentActivity extends Activity
 		mLinkButton = (ImageButton)mButtonsView.findViewById(R.id.linkButton);
 		mLayoutButton = mButtonsView.findViewById(R.id.layoutButton);
 
+		// GalePress reader show page thumbnails button
+		mReaderShowPageThumbnailsButton = (RelativeLayout)mButtonsView.findViewById(R.id.readerShowPageThumbnailsButton);
+		mReaderShowPageThumbnailsButtonImg = (ImageView)mButtonsView.findViewById(R.id.readerShowPageThumbnailsButtonImg);
+
+		mReaderShowPageThumbnailsButton.setVisibility(View.VISIBLE);
+		mReaderShowPageThumbnailsButton.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				showButtons();
+			}
+		});
+
 		mTopBarSwitcher.setVisibility(View.INVISIBLE);
 
 		// GP recycler page preview
@@ -763,6 +821,54 @@ public class DocumentActivity extends Activity
 		SearchTaskResult r = SearchTaskResult.get();
 		int searchPage = r != null ? r.pageNumber : -1;
 		mSearchTask.go(mSearchText.getText().toString(), direction, displayPage, searchPage);
+	}
+
+	/*
+	 * GalePress show thumbnails button scale animation
+	 * */
+	private void scaleAnimation() {
+		final int startTime = 0;
+		final int durationTime = 600;
+
+		ScaleAnimation s11 = new ScaleAnimation(1f, 0.8f, 1f, 0.8f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+		s11.setFillAfter(true);
+		s11.setStartOffset(startTime);
+		s11.setDuration(durationTime);
+		s11.setAnimationListener(new Animation.AnimationListener() {
+			@Override
+			public void onAnimationStart(Animation animation) {}
+
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				ScaleAnimation s12 = new ScaleAnimation(0.8f, 1f, 0.8f, 1f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+				s12.setFillAfter(true);
+				s12.setStartOffset(startTime);
+				s12.setDuration(durationTime);
+				s12.setAnimationListener(new Animation.AnimationListener() {
+					@Override
+					public void onAnimationStart(Animation animation) {}
+
+					@Override
+					public void onAnimationEnd(Animation animation) {
+						scaleAnimationReplayCount--;
+						if (scaleAnimationReplayCount > 0) {
+							scaleAnimation();
+						}
+						else {
+							scaleAnimationReplayCount = 3;
+						}
+					}
+
+					@Override
+					public void onAnimationRepeat(Animation animation) {}
+				});
+				mReaderShowPageThumbnailsButton.startAnimation(s12);
+			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {}
+		});
+		mReaderShowPageThumbnailsButton.startAnimation(s11);
 	}
 
 	@Override
