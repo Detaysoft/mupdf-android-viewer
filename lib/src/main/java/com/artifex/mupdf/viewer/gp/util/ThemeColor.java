@@ -12,6 +12,8 @@ public class ThemeColor {
 
     private final String DARK_THEME_COLOR = "#222222";
     private final String LIGHT_THEME_COLOR = "#ffffff";
+    private final String STRONG_DARK_THEME_COLOR = "#000000";
+    private final String STRONG_LIGHT_THEME_COLOR = "#ffffff";
 
     public static final int DARK_THEME_TYPE = 1;
     public static final int LIGHT_THEME_TYPE = 2;
@@ -31,6 +33,24 @@ public class ThemeColor {
         if (themeType == DARK_THEME_TYPE)
             return Color.parseColor(DARK_THEME_COLOR);
         return Color.parseColor(LIGHT_THEME_COLOR);
+    }
+
+    public int getOppositeThemeColor() {
+        if (themeType == DARK_THEME_TYPE)
+            return Color.parseColor(LIGHT_THEME_COLOR);
+        return Color.parseColor(DARK_THEME_COLOR);
+    }
+
+    public int getStrongThemeColor() {
+        if (themeType == DARK_THEME_TYPE)
+            return Color.parseColor(STRONG_DARK_THEME_COLOR);
+        return Color.parseColor(STRONG_LIGHT_THEME_COLOR);
+    }
+
+    public int getStrongOppositeThemeColor() {
+        if (themeType == DARK_THEME_TYPE)
+            return Color.parseColor(STRONG_LIGHT_THEME_COLOR);
+        return Color.parseColor(STRONG_DARK_THEME_COLOR);
     }
 
     public void setThemeType(int themeType) {

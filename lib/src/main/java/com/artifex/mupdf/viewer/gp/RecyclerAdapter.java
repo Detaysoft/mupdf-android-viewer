@@ -8,11 +8,20 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.artifex.mupdf.viewer.DocumentActivity;
 import com.artifex.mupdf.viewer.R;
+import com.artifex.mupdf.viewer.ReaderView;
 import com.artifex.mupdf.viewer.gp.models.PagePreview;
+import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 
-public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> implements ViewGroup.OnClickListener {
+public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> {
     private PagePreview[] mDataset;
+
+    // PDF related variables
+    private DocumentActivity mDocumentActivity;
+    private int selectedIndex = 0;
+
+    private MyViewHolder lastSelectedViewHolder;
 
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
@@ -32,8 +41,9 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
     }
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public RecyclerAdapter(PagePreview[] myDataset) {
+    public RecyclerAdapter(PagePreview[] myDataset, DocumentActivity documentActivity) {
         mDataset = myDataset;
+        mDocumentActivity = documentActivity;
     }
 
     // Create new views (invoked by the layout manager)
@@ -43,18 +53,47 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
         // create a new view
         RelativeLayout v = (RelativeLayout) LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.page_preview, parent, false);
-        v.setOnClickListener(this);
+
+        v.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
+
         MyViewHolder vh = new MyViewHolder(v);
         return vh;
     }
 
     // Replace the contents of a view (invoked by the layout manager)
     @Override
-    public void onBindViewHolder(MyViewHolder holder, int position) {
+    public void onBindViewHolder(final MyViewHolder holder, final int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
+
+        // display clicked page and change layout for both selected and last selected page
+        holder.relativeLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // if clicked the same page again
+                if (position == selectedIndex)
+                    return;
+
+                mDocumentActivity.onPagePreviewItemClick(position);
+                holder.pageNumber.setVisibility(View.VISIBLE);
+                lastSelectedViewHolder.pageNumber.setVisibility(View.GONE);
+                lastSelectedViewHolder = holder;
+                selectedIndex = position;
+            }
+        });
+
         holder.pageNumber.setText(String.valueOf(mDataset[position].getPageNumber()));
+        holder.pageNumber.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
+
+        if (position == selectedIndex) {
+            holder.pageNumber.setVisibility(View.VISIBLE);
+            lastSelectedViewHolder = holder;
+        }
+        else
+            holder.pageNumber.setVisibility(View.GONE);
+
         holder.previewImage.setImageBitmap(mDataset[position].getImage());
+
         holder.relativeLayout.setTag(position);
     }
 
@@ -64,9 +103,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
         return mDataset.length;
     }
 
-    @Override
-    public void onClick(View v) {
-        // overriding in DocumentActivity
-        System.out.println("RecycleAdapter onClick");
+    public void setSelectedIndex(int selectedIndex) {
+        this.selectedIndex = selectedIndex;
     }
 }

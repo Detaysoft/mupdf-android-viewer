@@ -64,9 +64,6 @@ public class DocumentActivity extends Activity
 	private boolean      mButtonsVisible;
 	private EditText     mPasswordView;
 	private TextView     mFilenameView;
-	private SeekBar      mPageSlider;
-	private int          mPageSliderRes;
-	private TextView     mPageNumberView;
 	private ImageButton  mSearchButton;
 	private ImageButton  mOutlineButton;
 	private ViewAnimator mTopBarSwitcher;
@@ -292,8 +289,7 @@ public class DocumentActivity extends Activity
 				if (core == null)
 					return;
 
-				mPageNumberView.setText(String.format(Locale.ROOT, "%d / %d", i + 1, core.countPages()));
-
+				mRecyclerPagePreviewAdapter.setSelectedIndex(i);
 				scrollToThumbnailPagePreviewIndex(i);
 
 				super.onMoveToChild(i);
@@ -327,6 +323,9 @@ public class DocumentActivity extends Activity
 		};
 		mDocView.setAdapter(new PageAdapter(this, core));
 
+		// GalePress set background theme color
+		mDocView.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
+
 		mSearchTask = new SearchTask(this, core) {
 			@Override
 			protected void onTextFound(SearchTaskResult result) {
@@ -343,10 +342,6 @@ public class DocumentActivity extends Activity
 		// controls in variables
 		makeButtonsView();
 
-		// Set up the page slider
-		int smax = Math.max(core.countPages()-1,1);
-		mPageSliderRes = ((10 + smax - 1)/smax) * 2;
-
 		// Set the file-name text
 		String docTitle = core.getTitle();
 		if (docTitle != null)
@@ -360,6 +355,8 @@ public class DocumentActivity extends Activity
 		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
 		mRecyclerPagePreview.setLayoutManager(mRecylerPagePreviewLayoutManager);
 
+		mRecyclerPagePreview.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
+
 		PagePreview[] ppArray = new PagePreview[core.countPages()];
 
 		// TODO: make width and height dynamic
@@ -369,22 +366,7 @@ public class DocumentActivity extends Activity
 			ppArray[i] = new PagePreview(i, pageThumbnails[i]);
 		}
 
-		mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray) {
-			@Override
-			public void onClick(View v) {
-				int index = (int)v.getTag();
-
-				// display selected page
-				mDocView.pushHistory();
-				mDocView.setDisplayedViewIndex(index);
-
-				// scroll to selected page
-				scrollToThumbnailPagePreviewIndex(index);
-
-				// update page num view
-				updatePageNumView(index);
-			}
-		};
+		mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, this);
 
 		mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
 
@@ -518,8 +500,10 @@ public class DocumentActivity extends Activity
 		SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 		mDocView.setDisplayedViewIndex(prefs.getInt("page"+mFileName, 0));
 
-		if (savedInstanceState == null || !savedInstanceState.getBoolean("ButtonsHidden", false))
-			showButtons();
+		// GalePress don't show buttons in first open
+		// TODO: instead show a button to let user know there are buttons
+		// if (savedInstanceState == null || !savedInstanceState.getBoolean("ButtonsHidden", false))
+		//	showButtons();
 
 		if(savedInstanceState != null && savedInstanceState.getBoolean("SearchMode", false))
 			searchModeOn();
@@ -633,6 +617,18 @@ public class DocumentActivity extends Activity
 		mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
 	}
 
+	/*
+	 * display page of the given index and center it
+	 * */
+	public void onPagePreviewItemClick(int index) {
+		// display selected page
+		mDocView.pushHistory();
+		mDocView.setDisplayedViewIndex(index);
+
+		// scroll to selected page
+		scrollToThumbnailPagePreviewIndex(index);
+	}
+
 	private void showButtons() {
 		if (core == null)
 			return;
@@ -640,10 +636,10 @@ public class DocumentActivity extends Activity
 			mButtonsVisible = true;
 			// Update page number text and slider
 			int index = mDocView.getDisplayedViewIndex();
-			updatePageNumView(index);
 
 			// GP scroll to displaying page
 			scrollToThumbnailPagePreviewIndex(index);
+			mRecyclerPagePreviewAdapter.notifyDataSetChanged();
 
 			if (mTopBarMode == TopBarMode.Search) {
 				mSearchText.requestFocus();
@@ -669,7 +665,7 @@ public class DocumentActivity extends Activity
 				}
 				public void onAnimationRepeat(Animation animation) {}
 				public void onAnimationEnd(Animation animation) {
-					mPageNumberView.setVisibility(View.VISIBLE);
+					// TODO: arrow button
 				}
 			});
 			mRecyclerPagePreview.startAnimation(anim);
@@ -696,7 +692,7 @@ public class DocumentActivity extends Activity
 			anim.setDuration(200);
 			anim.setAnimationListener(new Animation.AnimationListener() {
 				public void onAnimationStart(Animation animation) {
-					mPageNumberView.setVisibility(View.INVISIBLE);
+					// TODO: arrow button
 				}
 				public void onAnimationRepeat(Animation animation) {}
 				public void onAnimationEnd(Animation animation) {
@@ -729,18 +725,10 @@ public class DocumentActivity extends Activity
 		}
 	}
 
-	private void updatePageNumView(int index) {
-		if (core == null)
-			return;
-		mPageNumberView.setText(String.format(Locale.ROOT, "%d / %d", index + 1, core.countPages()));
-	}
-
 	private void makeButtonsView() {
 		mButtonsView = getLayoutInflater().inflate(R.layout.document_activity, null);
 		mFilenameView = (TextView)mButtonsView.findViewById(R.id.docNameText);
-		mPageSlider = (SeekBar)mButtonsView.findViewById(R.id.pageSlider);
 		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
-		mPageNumberView = (TextView)mButtonsView.findViewById(R.id.pageNumber);
 		mSearchButton = (ImageButton)mButtonsView.findViewById(R.id.searchButton);
 		mOutlineButton = (ImageButton)mButtonsView.findViewById(R.id.outlineButton);
 		mTopBarSwitcher = (ViewAnimator)mButtonsView.findViewById(R.id.switcher);
@@ -752,11 +740,9 @@ public class DocumentActivity extends Activity
 		mLayoutButton = mButtonsView.findViewById(R.id.layoutButton);
 
 		mTopBarSwitcher.setVisibility(View.INVISIBLE);
-		mPageNumberView.setVisibility(View.INVISIBLE);
 
 		// GP recycler page preview
 		mRecyclerPagePreview.setVisibility(View.INVISIBLE);
-		mPageSlider.setVisibility(View.GONE);
 	}
 
 	private void showKeyboard() {
