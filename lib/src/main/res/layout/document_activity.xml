@@ -136,7 +136,6 @@
 		<ImageView
 			android:layout_width="45dp"
 			android:layout_height="45dp"
-			android:id="@+id/readerShowPageThumbnailsButtonImg"
 			android:src="@drawable/reader_thumb_menu_arrow"
 			android:layout_centerInParent="true" />
 

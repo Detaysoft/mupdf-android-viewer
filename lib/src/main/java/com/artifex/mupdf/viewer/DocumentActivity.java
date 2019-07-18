@@ -76,7 +76,6 @@ public class DocumentActivity extends Activity
 
 	// GP reader show buttons button
 	private RelativeLayout mReaderShowPageThumbnailsButton;
-	private ImageView mReaderShowPageThumbnailsButtonImg;
 
 	// GP recycler page preview
 	private RecyclerView mRecyclerPagePreview;
@@ -787,7 +786,6 @@ public class DocumentActivity extends Activity
 
 		// GalePress reader show page thumbnails button
 		mReaderShowPageThumbnailsButton = (RelativeLayout)mButtonsView.findViewById(R.id.readerShowPageThumbnailsButton);
-		mReaderShowPageThumbnailsButtonImg = (ImageView)mButtonsView.findViewById(R.id.readerShowPageThumbnailsButtonImg);
 
 		mReaderShowPageThumbnailsButton.setVisibility(View.VISIBLE);
 		mReaderShowPageThumbnailsButton.setOnClickListener(new View.OnClickListener() {
