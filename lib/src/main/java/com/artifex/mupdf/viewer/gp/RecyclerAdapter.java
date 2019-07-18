@@ -2,6 +2,7 @@ package com.artifex.mupdf.viewer.gp;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
@@ -10,7 +11,7 @@ import android.widget.TextView;
 import com.artifex.mupdf.viewer.R;
 import com.artifex.mupdf.viewer.gp.models.PagePreview;
 
-public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> {
+public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> implements ViewGroup.OnClickListener {
     private PagePreview[] mDataset;
 
     // Provide a reference to the views for each data item
@@ -42,7 +43,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
         // create a new view
         RelativeLayout v = (RelativeLayout) LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.page_preview, parent, false);
-
+        v.setOnClickListener(this);
         MyViewHolder vh = new MyViewHolder(v);
         return vh;
     }
@@ -54,11 +55,18 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
         // - replace the contents of the view with that element
         holder.pageNumber.setText(String.valueOf(mDataset[position].getPageNumber()));
         holder.previewImage.setImageBitmap(mDataset[position].getImage());
+        holder.relativeLayout.setTag(position);
     }
 
     // Return the size of your dataset (invoked by the layout manager)
     @Override
     public int getItemCount() {
         return mDataset.length;
+    }
+
+    @Override
+    public void onClick(View v) {
+        // overriding in DocumentActivity
+        System.out.println("RecycleAdapter onClick");
     }
 }

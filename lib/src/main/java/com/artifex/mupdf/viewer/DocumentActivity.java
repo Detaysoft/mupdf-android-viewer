@@ -294,11 +294,8 @@ public class DocumentActivity extends Activity
 
 				mPageNumberView.setText(String.format(Locale.ROOT, "%d / %d", i + 1, core.countPages()));
 
-				/*
-				TODO: implement for recycler page preview
-				mPageSlider.setMax((core.countPages() - 1) * mPageSliderRes);
-				mPageSlider.setProgress(i * mPageSliderRes);
-				*/
+				scrollToThumbnailPagePreviewIndex(i);
+
 				super.onMoveToChild(i);
 			}
 
@@ -363,38 +360,35 @@ public class DocumentActivity extends Activity
 		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
 		mRecyclerPagePreview.setLayoutManager(mRecylerPagePreviewLayoutManager);
 
-		ArrayList<PagePreview> ppList = new ArrayList<>();
-
 		PagePreview[] ppArray = new PagePreview[core.countPages()];
+
+		// TODO: make width and height dynamic
 		Bitmap[] pageThumbnails = core.getPDFThumbnails(60, 90);
 
 		for (int i = 0; i < core.countPages(); i++) {
 			ppArray[i] = new PagePreview(i, pageThumbnails[i]);
 		}
 
-		mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray);
+		mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray) {
+			@Override
+			public void onClick(View v) {
+				int index = (int)v.getTag();
+
+				// display selected page
+				mDocView.pushHistory();
+				mDocView.setDisplayedViewIndex(index);
+
+				// scroll to selected page
+				scrollToThumbnailPagePreviewIndex(index);
+
+				// update page num view
+				updatePageNumView(index);
+			}
+		};
+
 		mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
 
 		//---------- GalePress recycle page preview [End]
-
-		/*
-		TODO: implement for recycler page preview
-		// Activate the seekbar
-		mPageSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-			public void onStopTrackingTouch(SeekBar seekBar) {
-				mDocView.pushHistory();
-				mDocView.setDisplayedViewIndex((seekBar.getProgress()+mPageSliderRes/2)/mPageSliderRes);
-			}
-
-			public void onStartTrackingTouch(SeekBar seekBar) {}
-
-			public void onProgressChanged(SeekBar seekBar, int progress,
-					boolean fromUser) {
-				updatePageNumView((progress+mPageSliderRes/2)/mPageSliderRes);
-			}
-		});
-
-		*/
 
 		// Activate the search-preparing button
 		mSearchButton.setOnClickListener(new View.OnClickListener() {
@@ -631,6 +625,14 @@ public class DocumentActivity extends Activity
 		mDocView.setLinksEnabled(highlight);
 	}
 
+	/*
+	 * scroll to index of item in thumbnail recycle view
+	 * */
+	private void scrollToThumbnailPagePreviewIndex(int index) {
+		// TODO: offset parameter needs to be dynamic
+		mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
+	}
+
 	private void showButtons() {
 		if (core == null)
 			return;
@@ -640,15 +642,8 @@ public class DocumentActivity extends Activity
 			int index = mDocView.getDisplayedViewIndex();
 			updatePageNumView(index);
 
-			/*
-			TODO: implement for recycler page preview
-			mPageSlider.setMax((core.countPages()-1)*mPageSliderRes);
-			mPageSlider.setProgress(index * mPageSliderRes);
-			*/
-
 			// GP scroll to displaying page
-			// TODO: offset parameter needs to be dynamic
-			mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
+			scrollToThumbnailPagePreviewIndex(index);
 
 			if (mTopBarMode == TopBarMode.Search) {
 				mSearchText.requestFocus();
