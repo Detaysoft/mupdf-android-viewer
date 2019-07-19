@@ -10,6 +10,8 @@ import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -36,13 +38,19 @@ import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewAnimator;
 
+import com.artifex.mupdf.viewer.gp.CropAndShareActivity;
 import com.artifex.mupdf.viewer.gp.RecyclerAdapter;
 import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
+import com.artifex.mupdf.viewer.gp.util.ThemeIcon;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -65,6 +73,7 @@ public class DocumentActivity extends Activity
 	private TextView     mFilenameView;
 	private ImageButton  mSearchButton;
 	private ImageButton  mOutlineButton;
+	private ImageButton  mShareButton;
 	private ViewAnimator mTopBarSwitcher;
 	private ImageButton  mLinkButton;
 	private TopBarMode   mTopBarMode = TopBarMode.Main;
@@ -445,6 +454,13 @@ public class DocumentActivity extends Activity
 			}
 		});
 
+		mShareButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				String filePath = getApplicationContext().getFilesDir().getAbsolutePath() + File.separator + "capturedImage.png";
+				cropAndShareCurrentPage(filePath);
+			}
+		});
+
 		mLinkButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				setLinkHighlight(!mLinkHighlight);
@@ -773,9 +789,10 @@ public class DocumentActivity extends Activity
 	private void makeButtonsView() {
 		mButtonsView = getLayoutInflater().inflate(R.layout.document_activity, null);
 		mFilenameView = (TextView)mButtonsView.findViewById(R.id.docNameText);
-		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
+		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview); // GP recycler view
 		mSearchButton = (ImageButton)mButtonsView.findViewById(R.id.searchButton);
 		mOutlineButton = (ImageButton)mButtonsView.findViewById(R.id.outlineButton);
+		mShareButton = (ImageButton)mButtonsView.findViewById(R.id.shareButton); // GP share button
 		mTopBarSwitcher = (ViewAnimator)mButtonsView.findViewById(R.id.switcher);
 		mSearchBack = (ImageButton)mButtonsView.findViewById(R.id.searchBack);
 		mSearchFwd = (ImageButton)mButtonsView.findViewById(R.id.searchForward);
@@ -783,6 +800,10 @@ public class DocumentActivity extends Activity
 		mSearchText = (EditText)mButtonsView.findViewById(R.id.searchText);
 		mLinkButton = (ImageButton)mButtonsView.findViewById(R.id.linkButton);
 		mLayoutButton = mButtonsView.findViewById(R.id.layoutButton);
+
+		// GalePress crop and share button
+		Drawable icon = ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.reader_share, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER);
+		mShareButton.setBackground(icon);
 
 		// GalePress reader show page thumbnails button
 		mReaderShowPageThumbnailsButton = (RelativeLayout)mButtonsView.findViewById(R.id.readerShowPageThumbnailsButton);
@@ -819,6 +840,67 @@ public class DocumentActivity extends Activity
 		SearchTaskResult r = SearchTaskResult.get();
 		int searchPage = r != null ? r.pageNumber : -1;
 		mSearchTask.go(mSearchText.getText().toString(), direction, displayPage, searchPage);
+	}
+
+	public void cropAndShareCurrentPage(String b) {
+
+		hideButtons();
+		mButtonsView.setVisibility(View.INVISIBLE);
+		try {
+			if (!savePic(takeScreenShot(DocumentActivity.this), b)) {
+				Toast.makeText(DocumentActivity.this, DocumentActivity.this.getResources().getString(R.string.cannot_open_crop), Toast.LENGTH_SHORT).show();
+				return;
+			}
+			Intent intent = new Intent(DocumentActivity.this, CropAndShareActivity.class);
+			int display_mode = getResources().getConfiguration().orientation;
+			intent.putExtra("displayMode", display_mode);
+			startActivity(intent);
+		} catch (Exception e) {
+			Toast.makeText(DocumentActivity.this, DocumentActivity.this.getResources().getString(R.string.cannot_open_crop), Toast.LENGTH_SHORT).show();
+		}
+		mButtonsView.setVisibility(View.VISIBLE);
+		showButtons();
+
+	}
+
+	private static Bitmap takeScreenShot(Activity activity) {
+		View view = activity.getWindow().getDecorView();
+		view.setDrawingCacheEnabled(true);
+		view.buildDrawingCache();
+		Bitmap b1 = view.getDrawingCache();
+		Rect frame = new Rect();
+		activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(frame);
+
+		int statusBarHeight = frame.top;
+		int width = activity.getWindowManager().getDefaultDisplay().getWidth();
+		int height = activity.getWindowManager().getDefaultDisplay()
+				.getHeight();
+		// Bitmap b = Bitmap.createBitmap(b1, 0, 25, 320, 455);
+		Bitmap b = Bitmap.createBitmap(b1, 0, statusBarHeight, width, height
+				- statusBarHeight);
+		view.destroyDrawingCache();
+
+		return b;
+	}
+
+	private static boolean savePic(Bitmap b, String strFileName) {
+		FileOutputStream fos = null;
+		try {
+			fos = new FileOutputStream(strFileName);
+			if (null != fos) {
+				b.compress(Bitmap.CompressFormat.PNG, 90, fos);
+				fos.flush();
+				fos.close();
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			return false;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+
+		return true;
 	}
 
 	/*

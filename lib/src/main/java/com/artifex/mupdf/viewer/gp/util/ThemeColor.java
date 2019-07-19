@@ -80,4 +80,16 @@ public class ThemeColor {
                 , 0, 0, 0, 1, 0};
         return new ColorMatrixColorFilter(matrix);
     }
+
+    public ColorFilter getOppositeThemeColorFilter() {
+        int color = getStrongOppositeThemeColor();
+        int redTheme = (color & 0xFF0000) / 0xFFFF;
+        int greenTheme = (color & 0xFF00) / 0xFF;
+        int blueTheme = color & 0xFF;
+        float[] matrixTheme = {0, 0, 0, 0, redTheme
+                , 0, 0, 0, 0, greenTheme
+                , 0, 0, 0, 0, blueTheme
+                , 0, 0, 0, 1, 0};
+        return new ColorMatrixColorFilter(matrixTheme);
+    }
 }

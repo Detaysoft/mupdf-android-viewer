@@ -40,8 +40,7 @@ public class CustomPulseProgress extends ViewGroup {
 
     public void init(Context context){
 
-        Drawable icon = getContext().getResources().getDrawable(R.drawable.progress_icon);
-        icon.setColorFilter(ThemeColor.getInstance().getForegroundColorFilter());
+        Drawable icon = ThemeIcon.getInstance().paintIcon(getContext(), R.drawable.progress_icon, ThemeIcon.FOREGROUND_COLOR_FILTER);
 
         img1 = new ImageView(context);
         img1.layout(0, 15, 10, 25);
