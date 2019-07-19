@@ -11,6 +11,7 @@ public class ThemeIcon {
     public final static int FOREGROUND_COLOR_FILTER = 1;
     public final static int THEME_COLOR_FILTER = 2;
     public final static int OPPOSITE_THEME_COLOR_FILTER = 3;
+    public final static int DISABLED_THEME_COLOR_FILTER = 4;
 
 
     public ThemeIcon() {
@@ -35,6 +36,11 @@ public class ThemeIcon {
 
             case OPPOSITE_THEME_COLOR_FILTER:
                 icon.setColorFilter(ThemeColor.getInstance().getOppositeThemeColorFilter());
+                return icon;
+
+            case DISABLED_THEME_COLOR_FILTER:
+                icon.setColorFilter(ThemeColor.getInstance().getDisabledThemeColorFilter());
+                return icon;
 
             case NO_FILTER:
                 return icon;

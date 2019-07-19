@@ -15,6 +15,7 @@ import android.widget.ProgressBar;
 
 import com.artifex.mupdf.viewer.gp.GPWebViewClient;
 import com.artifex.mupdf.viewer.R;
+import com.artifex.mupdf.viewer.gp.util.ThemeIcon;
 
 /**
  * Created by adem on 15/04/14.
@@ -37,8 +38,8 @@ public class ExtraWebViewActivity extends Activity {
         if(getIntent().getExtras().containsKey("isModal"))
             isModal = this.getIntent().getExtras().getBoolean("isModal");
 
-        forwardButton = (ImageButton) findViewById(R.id.extra_web_view_ileri_button);
-        forwardButton.setBackgroundColor(Color.GRAY);
+        forwardButton = (ImageButton) findViewById(R.id.extra_web_view_next_button);
+        forwardButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_next, ThemeIcon.DISABLED_THEME_COLOR_FILTER));
         forwardButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -48,8 +49,8 @@ public class ExtraWebViewActivity extends Activity {
             }
         });
 
-        backButton = (ImageButton) findViewById(R.id.extra_web_view_geri_button);
-        backButton.setBackgroundColor(Color.GRAY);
+        backButton = (ImageButton) findViewById(R.id.extra_web_view_back_button);
+        backButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_back, ThemeIcon.DISABLED_THEME_COLOR_FILTER));;
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -66,7 +67,7 @@ public class ExtraWebViewActivity extends Activity {
                 webView.reload();
             }
         });
-        refreshButton.setBackgroundColor(Color.WHITE);
+        refreshButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_refresh, ThemeIcon.DISABLED_THEME_COLOR_FILTER));;
 
         if(isModal){
             forwardButton.setVisibility(View.GONE);
@@ -75,7 +76,8 @@ public class ExtraWebViewActivity extends Activity {
         }
 
         ImageButton closeButton = (ImageButton) findViewById(R.id.extra_web_view_close_button);
-        closeButton.setBackgroundColor(Color.WHITE);
+        closeButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_close, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));;
+
         closeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -119,7 +121,7 @@ public class ExtraWebViewActivity extends Activity {
                 progressBar.setIndeterminate(true);
                 progressBar.getIndeterminateDrawable().setColorFilter(0xFF00D0FF, android.graphics.PorterDuff.Mode.MULTIPLY);
                 ((LinearLayout) progressBar.getParent()).setVisibility(View.VISIBLE);
-                refreshButton.setBackgroundColor(Color.GRAY);
+                refreshButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_refresh, ThemeIcon.DISABLED_THEME_COLOR_FILTER));
             }
 
             @Override
@@ -172,19 +174,23 @@ public class ExtraWebViewActivity extends Activity {
     }
 
     public void enableDisableNavigationButtons(WebView webView) {
+
         // if has previous page, enable the back button
         if(webView.canGoBack()){
-            backButton.setBackgroundColor(Color.WHITE);
+            backButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_back, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
         }
+        else {
+            backButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_back, ThemeIcon.DISABLED_THEME_COLOR_FILTER));
+        }
+
         // if has next page, enable the next button
         if(webView.canGoForward()){
-            forwardButton.setBackgroundColor(Color.WHITE);
+            forwardButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_next, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
         } else{
-            forwardButton.setBackgroundColor(Color.GRAY);
+            forwardButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_next, ThemeIcon.DISABLED_THEME_COLOR_FILTER));
         }
 
-        refreshButton.setBackgroundColor(Color.WHITE);
-
+        refreshButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_refresh, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
     }
 
 

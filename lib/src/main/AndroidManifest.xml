@@ -39,7 +39,8 @@
 		<activity
 			android:name=".gp.webviews.ExtraWebViewActivity"
 			android:configChanges="orientation|screenSize"
-			android:label="GalePress" />
+			android:label="GalePress"
+			android:theme="@style/ExtraWebView"/>
 		<activity
 			android:name="com.artifex.mupdf.viewer.gp.CropAndShareActivity"
 			android:label="@string/title_activity_crop"

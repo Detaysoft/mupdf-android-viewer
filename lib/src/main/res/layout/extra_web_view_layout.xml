@@ -23,7 +23,7 @@
 
 
         <ImageButton
-            android:id="@+id/extra_web_view_geri_button"
+            android:id="@+id/extra_web_view_back_button"
             android:layout_alignParentTop="false"
             android:layout_alignParentLeft="true"
             android:layout_alignParentStart="true"
@@ -36,10 +36,10 @@
             android:layout_height="25dp" />
 
         <ImageButton
-            android:id="@+id/extra_web_view_ileri_button"
+            android:id="@+id/extra_web_view_next_button"
             android:background="@android:color/transparent"
             android:layout_centerVertical="true"
-            android:layout_toRightOf="@+id/extra_web_view_geri_button"
+            android:layout_toRightOf="@+id/extra_web_view_back_button"
             android:layout_marginLeft="3dp"
             android:layout_marginRight="3dp"
             android:clickable="true"
@@ -49,7 +49,7 @@
         <ImageButton
             android:id="@+id/extra_web_view_refresh_button"
             android:background="@android:color/transparent"
-            android:layout_toRightOf="@+id/extra_web_view_ileri_button"
+            android:layout_toRightOf="@+id/extra_web_view_next_button"
             android:layout_centerVertical="true"
             android:layout_marginLeft="3dp"
             android:layout_marginRight="3dp"
@@ -60,15 +60,16 @@
             android:layout_height="25dp" />
 
     </RelativeLayout>
+
     <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent">
+
         <WebView xmlns:android="http://schemas.android.com/apk/res/android"
             android:id="@+id/webview"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
         </WebView>
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -87,9 +88,7 @@
 
         </LinearLayout>
 
-
     </RelativeLayout>
-
 
 </LinearLayout>
 

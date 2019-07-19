@@ -8,4 +8,21 @@
         <item name="android:windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
     </style>
+    <style name="ExtraWebView" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="android:popupMenuStyle">@style/PopupMenu</item>
+        <item name="android:textAppearanceLargePopupMenu">@style/PopupMenu.MenuItemTextAppearance</item>
+        <item name="android:textAppearanceSmallPopupMenu">@style/PopupMenu.MenuItemTextAppearance</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+
+    </style>
+
+    <style name="PopupMenu" parent="@android:style/Widget.Holo.PopupMenu">
+    </style>
+
+    <style name="PopupMenu.MenuItemTextAppearance" parent="@android:style/TextAppearance.Widget.TextView.PopupMenu">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
 </resources>
