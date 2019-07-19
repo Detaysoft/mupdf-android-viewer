@@ -42,6 +42,16 @@
 			android:label="GalePress" />
 		<activity
 			android:name="com.artifex.mupdf.viewer.gp.CropAndShareActivity"
-			android:label="@string/title_activity_crop" />
+			android:label="@string/title_activity_crop"
+			android:theme="@style/ReaderTheme" />
+		<provider
+			android:name="android.support.v4.content.FileProvider"
+			android:authorities="com.artifex.mupdf.viewer.fileprovider"
+			android:grantUriPermissions="true"
+			android:exported="false">
+			<meta-data
+				android:name="android.support.FILE_PROVIDER_PATHS"
+				android:resource="@xml/filepaths" />
+		</provider>
 	</application>
 </manifest>

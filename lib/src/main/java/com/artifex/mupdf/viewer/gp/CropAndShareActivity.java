@@ -7,9 +7,8 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
@@ -20,6 +19,8 @@ import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 import com.edmodo.cropper.CropImageView;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
  * Created by p1025 on 04.02.2016.
@@ -63,22 +64,34 @@ public class CropAndShareActivity extends Activity {
         share.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String pathofBmp = MediaStore.Images.Media.insertImage(getContentResolver(), cropImageView.getCroppedImage(),"title", null);
+                // save bitmap to cache directory
+                try {
 
-                if(pathofBmp != null) {
-                    Uri bmpUri = Uri.parse(pathofBmp);
-                    final Intent shareIntent = new Intent(     android.content.Intent.ACTION_SEND);
-                    shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    shareIntent.putExtra(Intent.EXTRA_STREAM, bmpUri);
-                    shareIntent.setType("image/png");
-                    startActivity(shareIntent);
-                } else {
-                    /*
-                     * https://fabric.io/galepress/android/apps/ak.detaysoft.feyz/issues/5758483affcdc0425003898f
-                     * Bu hata cok nadirende olsa oluyor takip edilecek crash oldugu zaman fabric-answers uzerinden tespit edilecek
-                     * */
-                    // Answers.getInstance().logCustom(new CustomEvent("cropandShareImageUrl").putCustomAttribute("url", ""+pathofBmp));
-                    Toast.makeText(CropAndShareActivity.this, CropAndShareActivity.this.getResources().getText(R.string.WARNING_0), Toast.LENGTH_SHORT).show();
+                    File cachePath = new File(getApplicationContext().getCacheDir(), "images");
+                    cachePath.mkdirs(); // don't forget to make the directory
+                    FileOutputStream stream = new FileOutputStream(cachePath + "/image.png"); // overwrites this image every time
+                    cropImageView.getCroppedImage().compress(Bitmap.CompressFormat.PNG, 100, stream);
+                    stream.close();
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                // get saved file and send it to share activity
+                File imagePath = new File(getApplicationContext().getCacheDir(), "images");
+                File newFile = new File(imagePath, "image.png");
+                Uri contentUri = FileProvider.getUriForFile(getApplicationContext(), "com.artifex.mupdf.viewer.fileprovider", newFile);
+
+                if (contentUri != null) {
+                    Intent shareIntent = new Intent();
+                    shareIntent.setAction(Intent.ACTION_SEND);
+                    shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION); // temp permission for receiving app to read this file
+                    shareIntent.setDataAndType(contentUri, getContentResolver().getType(contentUri));
+                    shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                    startActivity(Intent.createChooser(shareIntent, getApplicationContext().getResources().getString(R.string.choose_an_app)));
+                }
+                else {
+                    Toast.makeText(CropAndShareActivity.this, CropAndShareActivity.this.getResources().getText(R.string.unexpected_error), Toast.LENGTH_SHORT).show();
                 }
             }
         });
