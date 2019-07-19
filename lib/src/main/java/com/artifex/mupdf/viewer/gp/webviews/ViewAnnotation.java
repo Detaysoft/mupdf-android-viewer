@@ -5,7 +5,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
-import com.artifex.mupdf.viewer.gp.GPAnnotationInfo;
+import com.artifex.mupdf.viewer.gp.models.GPAnnotationInfo;
 import com.artifex.mupdf.viewer.ReaderView;
 
 /**

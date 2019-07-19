@@ -1,4 +1,4 @@
-package com.artifex.mupdf.viewer.gp;
+package com.artifex.mupdf.viewer.gp.models;
 
 import android.content.Context;
 import android.location.Location;

@@ -20,6 +20,7 @@
         android:layout_below="@id/previewImage"
         android:textAlignment="center"
         android:gravity="center"
+        android:textSize="15sp"
         android:layout_centerHorizontal="true"/>
 
 </RelativeLayout>

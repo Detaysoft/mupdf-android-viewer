@@ -1,4 +1,4 @@
-package com.artifex.mupdf.viewer.gp.util;
+package com.artifex.mupdf.viewer.gp;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
@@ -11,6 +11,7 @@ import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
 
 import com.artifex.mupdf.viewer.R;
+import com.artifex.mupdf.viewer.gp.util.ThemeIcon;
 
 /**
  * Created by p1025 on 23.07.2015.

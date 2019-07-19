@@ -14,12 +14,11 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ProgressBar;
 
-import com.artifex.mupdf.viewer.gp.GPAnnotationInfo;
+import com.artifex.mupdf.viewer.gp.models.GPAnnotationInfo;
 import com.artifex.mupdf.viewer.PageView;
 import com.artifex.mupdf.viewer.ReaderView;
-import com.artifex.mupdf.viewer.gp.util.CustomPulseProgress;
+import com.artifex.mupdf.viewer.gp.CustomPulseProgress;
 
 /**
  * Created by adem on 08/08/14.

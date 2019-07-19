@@ -10,9 +10,9 @@ import android.widget.TextView;
 
 import com.artifex.mupdf.viewer.DocumentActivity;
 import com.artifex.mupdf.viewer.R;
-import com.artifex.mupdf.viewer.ReaderView;
 import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
+import com.artifex.mupdf.viewer.gp.util.ThemeFont;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> {
     private PagePreview[] mDataset;
@@ -84,6 +84,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
 
         holder.pageNumber.setText(String.valueOf(mDataset[position].getPageNumber()));
         holder.pageNumber.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
+        holder.pageNumber.setTypeface(ThemeFont.getInstance().getMediumItalicFont(mDocumentActivity.getApplicationContext()));
 
         if (position == selectedIndex) {
             holder.pageNumber.setVisibility(View.VISIBLE);
