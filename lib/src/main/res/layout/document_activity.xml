@@ -7,75 +7,157 @@
 
 	<ViewAnimator
 		android:id="@+id/switcher"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
+		android:layout_width="wrap_content"
 		android:layout_alignParentTop="true"
 		android:layout_centerHorizontal="true"
+		android:layout_height="55dp"
 		>
 
-		<LinearLayout
+		<RelativeLayout
 			android:id="@+id/mainBar"
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:orientation="horizontal"
-			android:background="@color/toolbar"
 			>
+
+			<ImageView
+				android:layout_width="match_parent"
+				android:layout_height="1dp"
+				android:id="@+id/shadow"
+				android:background="@android:color/transparent"
+				android:alpha="0.2"
+				android:adjustViewBounds="false"
+				android:layout_alignParentBottom="true" />
 
 			<TextView
 				android:id="@+id/docNameText"
-				android:layout_width="0dp"
+				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				android:layout_weight="1"
-				android:layout_gravity="center"
+				android:layout_centerVertical="true"
+				android:layout_toLeftOf="@+id/linkButton"
+				android:layout_alignParentLeft="true"
 				android:paddingLeft="16dp"
-				android:paddingRight="8dp"
 				android:singleLine="true"
-				android:ellipsize="end"
-				android:textSize="16dp"
-				android:textColor="@android:color/white"
-				/>
+				android:textColor="#FFFFFF"
+				android:visibility="gone"/>
 
 			<ImageButton
 				android:id="@+id/linkButton"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
+				android:layout_centerVertical="true"
+				android:layout_toLeftOf="@+id/reflowButton"
+				android:contentDescription="@string/toggle_links"
 				android:background="@drawable/button"
-				android:src="@drawable/ic_link_white_24dp"
-				/>
+				android:src="@drawable/ic_link"
+				android:visibility="gone"/>
 
 			<ImageButton
-				android:id="@+id/searchButton"
+				android:id="@+id/reflowButton"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
+				android:layout_centerVertical="true"
+				android:layout_toLeftOf="@+id/outlineButtonBase"
+				android:contentDescription="@string/toggle_reflow_mode"
 				android:background="@drawable/button"
-				android:src="@drawable/ic_search_white_24dp"
-				/>
+				android:src="@drawable/ic_reflow"
+				android:visibility="gone"/>
+
+			<LinearLayout
+				android:id="@+id/outlineButtonBase"
+				android:layout_width="35dp"
+				android:layout_height="35dp"
+				android:orientation="vertical"
+				android:gravity="center"
+				android:layout_alignParentLeft="true"
+				android:layout_marginLeft="10dp"
+				android:layout_centerVertical="true">
+
+				<ImageButton
+					android:id="@+id/outlineButton"
+					android:layout_width="25dp"
+					android:layout_height="35dp"
+					android:background="@android:color/transparent"
+					android:clickable="false"
+					android:contentDescription="@string/outline_title" />
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/searchButtonBase"
+				android:layout_width="35dp"
+				android:layout_height="35dp"
+				android:orientation="vertical"
+				android:gravity="center"
+				android:layout_toLeftOf="@+id/shareButtonBase"
+				android:layout_marginLeft="10dp"
+				android:layout_centerVertical="true">
+				<ImageButton
+					android:id="@+id/searchButton"
+					android:layout_width="25dp"
+					android:layout_height="25dp"
+					android:background="@android:color/transparent"
+					android:scaleType="centerInside"
+					android:clickable="false"/>
+			</LinearLayout>
 
 			<ImageButton
-				android:id="@+id/layoutButton"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/button"
-				android:src="@drawable/ic_format_size_white_24dp"
-				android:visibility="gone"
-				/>
+				android:id="@+id/imageButton"
+				android:layout_width="35dp"
+				android:layout_height="35dp"
+				android:layout_centerVertical="true"
+				android:layout_alignParentRight="true"
+				android:background="@android:color/transparent"
+				android:onClick="OnMoreButtonClick"
+				android:layout_marginRight="10dp"
+				android:layout_marginLeft="15dp" />
+
+
+			<LinearLayout
+				android:id="@+id/shareButtonBase"
+				android:layout_width="35dp"
+				android:layout_height="35dp"
+				android:orientation="vertical"
+				android:gravity="center"
+				android:layout_alignParentRight="true"
+				android:layout_marginLeft="5dp"
+				android:layout_centerVertical="true"
+				android:layout_marginRight="10dp">
+
+				<ImageButton
+					android:id="@+id/shareButton"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:background="@drawable/button"
+					/>
+			</LinearLayout>
+
 
 			<ImageButton
-				android:id="@+id/outlineButton"
+				android:id="@+id/moreButton"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
+				android:layout_centerVertical="true"
+				android:layout_alignParentRight="true"
+				android:contentDescription="@string/more"
 				android:background="@drawable/button"
-				android:src="@drawable/ic_toc_white_24dp"
-				/>
+				android:onClick="OnMoreButtonClick"
+				android:src="@drawable/ic_more"
+				android:visibility="gone"/>
 
-			<ImageButton
-				android:id="@+id/shareButton"
+			<TextView
+				android:id="@+id/reader_title"
 				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/button"
-				/>
+				android:layout_height="match_parent"
+				android:background="@android:color/transparent"
+				android:layout_centerVertical="true"
+				android:layout_gravity="center"
+				android:textSize="@dimen/actionbar_text_size"
+				android:gravity="center"
+				android:layout_toRightOf="@+id/outlineButtonBase"
+				android:layout_marginLeft="10dp"
+				android:layout_marginBottom="5dp"
+				android:layout_marginTop="5dp" />
 
-		</LinearLayout>
+		</RelativeLayout>
 
 		<LinearLayout
 			android:id="@+id/searchBar"

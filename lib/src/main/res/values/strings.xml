@@ -18,4 +18,10 @@
 	<string name="cannot_open_crop">Cannot open share screen</string>
 
 	<string name="choose_an_app">Choose an app</string>
+
+	<string name="toggle_links">Highlight and enable links</string>
+	<string name="toggle_reflow_mode">Toggle reflow mode</string>
+	<string name="outline_title">Table of Contents</string>
+	<string name="more">More</string>
+
 </resources>

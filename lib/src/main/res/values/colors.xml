@@ -3,4 +3,6 @@
 	<color name="page_indicator">#C0202020</color>
 	<color name="toolbar">#C0202020</color>
 	<color name="black">#000000</color>
+	<color name="button_normal">#FF2572AC</color>
+	<color name="button_pressed">#77a6ac</color>
 </resources>

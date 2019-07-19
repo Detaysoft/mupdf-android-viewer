@@ -13,6 +13,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.widget.LinearLayoutManager;
@@ -82,6 +83,9 @@ public class DocumentActivity extends Activity
 	private ImageButton  mSearchClose;
 	private EditText     mSearchText;
 	private SearchTask   mSearchTask;
+	private ImageButton  mImageButton;
+	private ImageButton  mMoreButton;
+	private TextView     mReaderTitle;
 
 	// GP reader show buttons button
 	private RelativeLayout mReaderShowPageThumbnailsButton;
@@ -106,7 +110,7 @@ public class DocumentActivity extends Activity
 	// page thumbnail show button scale animation replay count
 	private int scaleAnimationReplayCount = 3;
 
-	protected View mLayoutButton;
+	protected View mReflowButton;
 	protected PopupMenu mLayoutPopupMenu;
 
 	private MuPDFCore openFile(String path)
@@ -468,8 +472,8 @@ public class DocumentActivity extends Activity
 		});
 
 		if (core.isReflowable()) {
-			mLayoutButton.setVisibility(View.VISIBLE);
-			mLayoutPopupMenu = new PopupMenu(this, mLayoutButton);
+			mReflowButton.setVisibility(View.VISIBLE);
+			mLayoutPopupMenu = new PopupMenu(this, mReflowButton);
 			mLayoutPopupMenu.getMenuInflater().inflate(R.menu.layout_menu, mLayoutPopupMenu.getMenu());
 			mLayoutPopupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
 				public boolean onMenuItemClick(MenuItem item) {
@@ -491,7 +495,7 @@ public class DocumentActivity extends Activity
 					return true;
 				}
 			});
-			mLayoutButton.setOnClickListener(new View.OnClickListener() {
+			mReflowButton.setOnClickListener(new View.OnClickListener() {
 				public void onClick(View v) {
 					mLayoutPopupMenu.show();
 				}
@@ -799,7 +803,10 @@ public class DocumentActivity extends Activity
 		mSearchClose = (ImageButton)mButtonsView.findViewById(R.id.searchClose);
 		mSearchText = (EditText)mButtonsView.findViewById(R.id.searchText);
 		mLinkButton = (ImageButton)mButtonsView.findViewById(R.id.linkButton);
-		mLayoutButton = mButtonsView.findViewById(R.id.layoutButton);
+		mReflowButton = (ImageButton)mButtonsView.findViewById(R.id.reflowButton);
+		mImageButton = (ImageButton)mButtonsView.findViewById(R.id.imageButton);
+		mMoreButton = (ImageButton)mButtonsView.findViewById(R.id.moreButton);
+		mReaderTitle = (TextView)mButtonsView.findViewById(R.id.reader_title);
 
 		// GalePress crop and share button
 		Drawable icon = ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.reader_share, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER);
@@ -820,6 +827,22 @@ public class DocumentActivity extends Activity
 
 		// GP recycler page preview
 		mRecyclerPagePreview.setVisibility(View.INVISIBLE);
+
+		// GP search button
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+			mSearchButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_search,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+		else
+			mSearchButton.setBackgroundDrawable(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_search,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+
+		// GP table of contens
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+			mOutlineButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_contents,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+		else
+			mOutlineButton.setBackgroundDrawable(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_contents,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+
+		// GP switcher
+		mTopBarSwitcher.setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
+
 	}
 
 	private void showKeyboard() {
