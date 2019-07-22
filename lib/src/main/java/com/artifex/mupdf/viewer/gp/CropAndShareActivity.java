@@ -80,7 +80,9 @@ public class CropAndShareActivity extends Activity {
                 // get saved file and send it to share activity
                 File imagePath = new File(getApplicationContext().getCacheDir(), "images");
                 File newFile = new File(imagePath, "image.png");
-                Uri contentUri = FileProvider.getUriForFile(getApplicationContext(), "com.artifex.mupdf.viewer.fileprovider", newFile);
+
+                String authorityString = getApplicationContext().getPackageName().concat(".fileprovider");
+                Uri contentUri = FileProvider.getUriForFile(getApplicationContext(), authorityString, newFile);
 
                 if (contentUri != null) {
                     Intent shareIntent = new Intent();

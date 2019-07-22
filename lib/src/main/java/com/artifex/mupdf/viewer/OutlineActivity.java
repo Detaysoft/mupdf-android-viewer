@@ -30,7 +30,9 @@ public class OutlineActivity extends ListActivity
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+		// Commented out for disabling full screen in GalePress
+		// getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
 		adapter = new ArrayAdapter<Item>(this, android.R.layout.simple_list_item_1);
 		setListAdapter(adapter);
