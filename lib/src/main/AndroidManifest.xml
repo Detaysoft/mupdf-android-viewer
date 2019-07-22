@@ -7,6 +7,10 @@
 		<activity
 			android:name=".DocumentActivity"
 			android:configChanges="orientation|screenSize|keyboardHidden"
+			android:theme="@style/ReaderTheme"
+			android:hardwareAccelerated="true"
+			android:screenOrientation="sensor"
+			android:usesCleartextTraffic="true"
 			>
 			<intent-filter>
 				<action android:name="android.intent.action.VIEW" />
@@ -42,12 +46,12 @@
 			android:label="GalePress"
 			android:theme="@style/ExtraWebView"/>
 		<activity
-			android:name="com.artifex.mupdf.viewer.gp.CropAndShareActivity"
+			android:name=".gp.CropAndShareActivity"
 			android:label="@string/title_activity_crop"
 			android:theme="@style/ReaderTheme" />
 		<provider
 			android:name="android.support.v4.content.FileProvider"
-			android:authorities="com.artifex.mupdf.viewer.fileprovider"
+			android:authorities="${applicationId}.fileprovider"
 			android:grantUriPermissions="true"
 			android:exported="false">
 			<meta-data
