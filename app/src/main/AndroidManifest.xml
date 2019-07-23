@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.artifex.mupdf.viewer.app"
-	android:installLocation="auto"
-	>
+	android:installLocation="auto">
 	<uses-permission
 		android:name="android.permission.READ_EXTERNAL_STORAGE"
 		/>
 	<application
 		android:label="MuPDF viewer"
 		android:icon="@drawable/ic_mupdf"
+		android:usesCleartextTraffic="true"
 		>
 		<activity
 			android:name=".LibraryActivity"
