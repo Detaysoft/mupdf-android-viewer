@@ -8,7 +8,6 @@
 	<application
 		android:label="MuPDF viewer"
 		android:icon="@drawable/ic_mupdf"
-		android:usesCleartextTraffic="true"
 		>
 		<activity
 			android:name=".LibraryActivity"

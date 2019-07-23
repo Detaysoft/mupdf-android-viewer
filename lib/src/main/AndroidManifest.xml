@@ -3,15 +3,16 @@
 	package="com.artifex.mupdf.viewer"
 	>
 	<uses-permission android:name="android.permission.INTERNET" />
-	<application>
+	<application
+		android:usesCleartextTraffic="true"
+		>
+
 		<activity
 			android:name=".DocumentActivity"
 			android:configChanges="orientation|screenSize|keyboardHidden"
 			android:theme="@style/ReaderTheme"
 			android:hardwareAccelerated="true"
-			android:screenOrientation="sensor"
-			android:usesCleartextTraffic="true"
-			>
+			android:screenOrientation="sensor">
 			<intent-filter>
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.DEFAULT" />
