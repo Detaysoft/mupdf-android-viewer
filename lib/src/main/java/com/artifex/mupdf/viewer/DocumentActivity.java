@@ -104,9 +104,6 @@ public class DocumentActivity extends Activity
 	private ImageButton  mSearchClose;
 	private EditText     mSearchText;
 	private SearchTask   mSearchTask;
-	private ImageButton  mImageButton;
-	private ImageButton  mMoreButton;
-	private TextView     mReaderTitle;
 
 	// Search mode GalePress or mupdf lib
 	private SearchMode mSearchMode = SearchMode.Lib;
@@ -950,9 +947,6 @@ public class DocumentActivity extends Activity
 		mSearchText = (EditText)mButtonsView.findViewById(R.id.searchText);
 		mLinkButton = (ImageButton)mButtonsView.findViewById(R.id.linkButton);
 		mReflowButton = (ImageButton)mButtonsView.findViewById(R.id.reflowButton);
-		mImageButton = (ImageButton)mButtonsView.findViewById(R.id.imageButton);
-		mMoreButton = (ImageButton)mButtonsView.findViewById(R.id.moreButton);
-		mReaderTitle = (TextView)mButtonsView.findViewById(R.id.reader_title);
 
 		// GalePress crop and share button
 		Drawable icon = ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.reader_share, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER);

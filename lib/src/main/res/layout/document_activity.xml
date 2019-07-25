@@ -16,7 +16,7 @@
 		<RelativeLayout
 			android:id="@+id/mainBar"
 			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
+			android:layout_height="match_parent"
 			>
 
 			<ImageView
@@ -75,7 +75,7 @@
 				<ImageButton
 					android:id="@+id/outlineButton"
 					android:layout_width="25dp"
-					android:layout_height="35dp"
+					android:layout_height="25dp"
 					android:background="@android:color/transparent"
 					android:clickable="false"
 					android:contentDescription="@string/outline_title" />
@@ -99,18 +99,6 @@
 					android:clickable="false"/>
 			</LinearLayout>
 
-			<ImageButton
-				android:id="@+id/imageButton"
-				android:layout_width="35dp"
-				android:layout_height="35dp"
-				android:layout_centerVertical="true"
-				android:layout_alignParentRight="true"
-				android:background="@android:color/transparent"
-				android:onClick="OnMoreButtonClick"
-				android:layout_marginRight="10dp"
-				android:layout_marginLeft="15dp" />
-
-
 			<LinearLayout
 				android:id="@+id/shareButtonBase"
 				android:layout_width="35dp"
@@ -130,50 +118,23 @@
 					/>
 			</LinearLayout>
 
-
-			<ImageButton
-				android:id="@+id/moreButton"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:layout_centerVertical="true"
-				android:layout_alignParentRight="true"
-				android:contentDescription="@string/more"
-				android:background="@drawable/button"
-				android:onClick="OnMoreButtonClick"
-				android:src="@drawable/ic_more"
-				android:visibility="gone"/>
-
-			<TextView
-				android:id="@+id/reader_title"
-				android:layout_width="wrap_content"
-				android:layout_height="match_parent"
-				android:background="@android:color/transparent"
-				android:layout_centerVertical="true"
-				android:layout_gravity="center"
-				android:textSize="@dimen/actionbar_text_size"
-				android:gravity="center"
-				android:layout_toRightOf="@+id/outlineButtonBase"
-				android:layout_marginLeft="10dp"
-				android:layout_marginBottom="5dp"
-				android:layout_marginTop="5dp" />
-
 		</RelativeLayout>
 
 		<LinearLayout
 			android:id="@+id/searchBar"
 			android:layout_width="match_parent"
-			android:layout_height="55dp"
+			android:layout_height="match_parent"
 			android:orientation="horizontal"
 			android:background="@android:color/transparent"
 			android:gravity="center_vertical">
 
 			<ImageButton
 				android:id="@+id/searchClose"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/button"
+				android:layout_width="35dp"
+				android:layout_height="35dp"
+				android:background="@android:color/transparent"
 				android:src="@drawable/ic_close_white_24dp"
-				/>
+				android:layout_marginLeft="10dp"/>
 
 			<EditText
 				android:id="@+id/searchText"
@@ -194,18 +155,19 @@
 
 			<ImageButton
 				android:id="@+id/searchBack"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/button"
+				android:layout_width="35dp"
+				android:layout_height="35dp"
+				android:background="@android:color/transparent"
 				android:src="@drawable/ic_chevron_left_white_24dp"
 				/>
 
 			<ImageButton
 				android:id="@+id/searchForward"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:background="@drawable/button"
+				android:layout_width="35dp"
+				android:layout_height="35dp"
+				android:background="@android:color/transparent"
 				android:src="@drawable/ic_chevron_right_white_24dp"
+				android:layout_marginRight="10dp"
 				/>
 
 		</LinearLayout>
