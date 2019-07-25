@@ -1351,6 +1351,9 @@ public class DocumentActivity extends Activity
 
 	@Override
 	protected void onStop() {
+		if (MuPDFLibrary.getAppInstance() != null) {
+			MuPDFLibrary.getAppInstance().setMuPDFActivity(null);
+		}
 		super.onStop();
 	}
 
