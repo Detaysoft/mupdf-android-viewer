@@ -2,15 +2,18 @@ package com.artifex.mupdf.viewer;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -18,33 +21,45 @@ import android.os.Handler;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.text.Html;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.PopupMenu;
+import android.widget.PopupWindow;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
 
+import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
 import com.artifex.mupdf.viewer.gp.CropAndShareActivity;
 import com.artifex.mupdf.viewer.gp.RecyclerAdapter;
+import com.artifex.mupdf.viewer.gp.models.GPContent;
+import com.artifex.mupdf.viewer.gp.models.GPReaderSearchResult;
 import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
+import com.artifex.mupdf.viewer.gp.util.ThemeFont;
 import com.artifex.mupdf.viewer.gp.util.ThemeIcon;
 
 import java.io.ByteArrayOutputStream;
@@ -62,6 +77,12 @@ public class DocumentActivity extends Activity
 	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
 	/* The core rendering instance */
 	enum TopBarMode {Main, Search, More};
+
+	/**
+	 *  App: use app search methods and GalePress design
+	 *  Lib: use mupdf-android-viewer search
+	 */
+	enum SearchMode {App, Lib};
 
 	private final int    OUTLINE_REQUEST=0;
 	private MuPDFCore    core;
@@ -82,6 +103,25 @@ public class DocumentActivity extends Activity
 	private ImageButton  mSearchClose;
 	private EditText     mSearchText;
 	private SearchTask   mSearchTask;
+
+	// Search mode GalePress or mupdf lib
+	private SearchMode mSearchMode = SearchMode.Lib;
+
+	// GP custom model
+	private GPContent content;
+
+	// GP search
+	private SearchResultAdapter searchAdapter;
+	private ListView mSearhResultListView;
+	private LinearLayout mSearchProgressBaseView;
+	private LinearLayout mSearchClearBaseView;
+	private PopupWindow mSearchPopup;
+	private EditText mPopupSearchEditText;
+	private String mReaderSearchWord;
+	public ProgressDialog mSearchDialog;
+
+	// GP reader search result
+	private ArrayList<GPReaderSearchResult> mReaderSearchResult;
 
 	// GP reader show buttons button
 	private RelativeLayout mReaderShowPageThumbnailsButton;
@@ -176,6 +216,40 @@ public class DocumentActivity extends Activity
 			Intent intent = getIntent();
 
 			//---------- GalePress Integration [Start]
+
+			// if application instance registered, use its methods for search, set etc.
+			if (MuPDFLibrary.getAppInstance() != null) {
+				MuPDFLibrary.getAppInstance().setMuPDFActivity(this);
+				mSearchMode = SearchMode.App;
+			}
+			else {
+				Log.i(MuPDFLibrary.TAG, "if you want to implement a custom search or etc. you can register your app instance which implements ApplicationInterface using MuPDFLibrary class");
+			}
+
+			content = (GPContent) intent.getSerializableExtra("content");
+
+			// if content is not sent as intent extra set create one with default values
+			// this is just for not requiring content in viewer.app
+			if (content == null) {
+				content = new GPContent() {
+					@Override
+					public Integer getId() {
+						return 0;
+					}
+
+					@Override
+					public String getName() {
+						return "document";
+					}
+
+					@Override
+					public Integer getContentOrientation() {
+						return getResources().getConfiguration().orientation;
+					}
+				};
+				Log.i(MuPDFLibrary.TAG, "content is used in custom methods of ApplicationInterface instance, if you registered your app, you'd prefer to set GPContent implemented object, as a serializable extra when starting DocumentActivity");
+			}
+
 			String foregroundColor = intent.getStringExtra(EXTRA_FOREGROUND_THEME_COLOR);
 			if (foregroundColor != null) {
 				ThemeColor.getInstance().setForegroundColor(foregroundColor);
@@ -293,6 +367,15 @@ public class DocumentActivity extends Activity
 		mDocView.setDisplayedViewIndex(loc);
 	}
 
+	/**
+	 * GalePress integration manage layout of custom views on orientation change
+	 * @param currentPageIndex
+	 */
+	public void relayoutCustomViews(int currentPageIndex) {
+		searchModeOff();
+		scrollToThumbnailPagePreviewIndex(currentPageIndex);
+	}
+
 	public void createUI(Bundle savedInstanceState) {
 		if (core == null)
 			return;
@@ -335,6 +418,14 @@ public class DocumentActivity extends Activity
 				} else {
 					refresh();
 				}
+			}
+
+			@Override
+			public void onConfigurationChanged(Configuration newConfig) {
+				super.onConfigurationChanged(newConfig);
+
+				// GalePress integration manage layout of custom views on orientation change
+				relayoutCustomViews(mCurrent);
 			}
 		};
 		mDocView.setAdapter(new PageAdapter(this, core));
@@ -395,66 +486,12 @@ public class DocumentActivity extends Activity
 			}
 		});
 
-		mSearchClose.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				searchModeOff();
-			}
-		});
-
-		// Search invoking buttons are disabled while there is no text specified
-		mSearchBack.setEnabled(false);
-		mSearchFwd.setEnabled(false);
-		mSearchBack.setColorFilter(Color.argb(255, 128, 128, 128));
-		mSearchFwd.setColorFilter(Color.argb(255, 128, 128, 128));
-
-		// React to interaction with the text widget
-		mSearchText.addTextChangedListener(new TextWatcher() {
-
-			public void afterTextChanged(Editable s) {
-				boolean haveText = s.toString().length() > 0;
-				setButtonEnabled(mSearchBack, haveText);
-				setButtonEnabled(mSearchFwd, haveText);
-
-				// Remove any previous search results
-				if (SearchTaskResult.get() != null && !mSearchText.getText().toString().equals(SearchTaskResult.get().txt)) {
-					SearchTaskResult.set(null);
-					mDocView.resetupChildren();
-				}
-			}
-			public void beforeTextChanged(CharSequence s, int start, int count,
-					int after) {}
-			public void onTextChanged(CharSequence s, int start, int before,
-					int count) {}
-		});
-
-		//React to Done button on keyboard
-		mSearchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-				if (actionId == EditorInfo.IME_ACTION_DONE)
-					search(1);
-				return false;
-			}
-		});
-
-		mSearchText.setOnKeyListener(new View.OnKeyListener() {
-			public boolean onKey(View v, int keyCode, KeyEvent event) {
-				if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER)
-					search(1);
-				return false;
-			}
-		});
-
-		// Activate search invoking buttons
-		mSearchBack.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				search(-1);
-			}
-		});
-		mSearchFwd.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				search(1);
-			}
-		});
+		if (mSearchMode == SearchMode.Lib) {
+			createLibSearchUI();
+		}
+		else {
+			removeLibSearchUI();
+		}
 
 		mShareButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
@@ -538,11 +575,93 @@ public class DocumentActivity extends Activity
 		setContentView(layout);
 	}
 
+	public void createLibSearchUI() {
+		mButtonsView.findViewById(R.id.searchBar).setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
+
+		mSearchClose.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				searchModeOff();
+			}
+		});
+		mSearchClose.setColorFilter(ThemeColor.getInstance().getOppositeThemeColorFilter());
+
+		// Search invoking buttons are disabled while there is no text specified
+		mSearchBack.setEnabled(false);
+		mSearchFwd.setEnabled(false);
+		mSearchBack.setColorFilter(ThemeColor.getInstance().getOppositeThemeColorFilter());
+		mSearchFwd.setColorFilter(ThemeColor.getInstance().getOppositeThemeColorFilter());
+
+		mSearchText.setTextColor(ThemeColor.getInstance().getOppositeThemeColor());
+
+		// React to interaction with the text widget
+		mSearchText.addTextChangedListener(new TextWatcher() {
+
+			public void afterTextChanged(Editable s) {
+				boolean haveText = s.toString().length() > 0;
+				setButtonEnabled(mSearchBack, haveText);
+				setButtonEnabled(mSearchFwd, haveText);
+
+				// Remove any previous search results
+				if (SearchTaskResult.get() != null && !mSearchText.getText().toString().equals(SearchTaskResult.get().txt)) {
+					SearchTaskResult.set(null);
+					mDocView.resetupChildren();
+				}
+			}
+			public void beforeTextChanged(CharSequence s, int start, int count,
+										  int after) {}
+			public void onTextChanged(CharSequence s, int start, int before,
+									  int count) {}
+		});
+
+		// React to Done button on keyboard
+		mSearchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				if (actionId == EditorInfo.IME_ACTION_DONE)
+					search(1);
+				return false;
+			}
+		});
+
+		mSearchText.setOnKeyListener(new View.OnKeyListener() {
+			public boolean onKey(View v, int keyCode, KeyEvent event) {
+				if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER)
+					search(1);
+				return false;
+			}
+		});
+
+		// Activate search invoking buttons
+		mSearchBack.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				search(-1);
+			}
+		});
+		mSearchFwd.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				search(1);
+			}
+		});
+	}
+
+	public void removeLibSearchUI() {
+		LinearLayout searchBar = mButtonsView.findViewById(R.id.searchBar);
+
+		if (searchBar == null) return;
+
+		ViewGroup parent = (ViewGroup) searchBar.getParent();
+
+		if (parent == null) return;
+
+		parent.removeView(searchBar);
+	}
+
 	//---------- GalePress Integration [Start]
 
-	// Temporary content id for test
+	/**
+	 * get current content id for custom GPContent
+	 */
 	public String getContentId() {
-		return "100069";
+		return content.getId().toString();
 	}
 
 	public ReaderView getReaderView() {
@@ -631,6 +750,21 @@ public class DocumentActivity extends Activity
 		mDocView.setLinksEnabled(highlight);
 	}
 
+	/**
+	 * set search result
+	 * @param searchResult
+	 */
+	public void setReaderSearchResult(ArrayList<GPReaderSearchResult> searchResult) {
+		mReaderSearchResult = searchResult;
+	}
+
+	/**
+	 * get search result
+	 */
+	public ArrayList<GPReaderSearchResult> getReaderSearchResult() {
+		return mReaderSearchResult;
+	}
+
 	/*
 	 * scroll to index of item in thumbnail recycle view
 	 * */
@@ -664,10 +798,11 @@ public class DocumentActivity extends Activity
 			mRecyclerPagePreviewAdapter.notifyDataSetChanged();
 
 			if (mTopBarMode == TopBarMode.Search) {
-				mSearchText.requestFocus();
+				if (mSearchMode == SearchMode.Lib) {
+					mSearchText.requestFocus();
+				}
 				showKeyboard();
 			}
-
 
 			// GalePress animate show reader bottom thumbnail (up arrow) button
 			Animation anim = new TranslateAnimation(0, 0, 0, mReaderShowPageThumbnailsButton.getHeight());
@@ -770,7 +905,12 @@ public class DocumentActivity extends Activity
 		if (mTopBarMode != TopBarMode.Search) {
 			mTopBarMode = TopBarMode.Search;
 			//Focus on EditTextWidget
-			mSearchText.requestFocus();
+			if (mSearchMode == SearchMode.App) {
+				openSearchPopup();
+			}
+			else {
+				mSearchText.requestFocus();
+			}
 			showKeyboard();
 			mTopBarSwitcher.setDisplayedChild(mTopBarMode.ordinal());
 		}
@@ -785,6 +925,10 @@ public class DocumentActivity extends Activity
 			// Make the ReaderView act on the change to mSearchTaskResult
 			// via overridden onChildSetup method.
 			mDocView.resetupChildren();
+		}
+
+		if (mSearchMode == SearchMode.App && mSearchPopup != null && mSearchPopup.isShowing()) {
+			mSearchPopup.dismiss();
 		}
 	}
 
@@ -826,14 +970,33 @@ public class DocumentActivity extends Activity
 
 	private void showKeyboard() {
 		InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-		if (imm != null)
+
+		if (imm == null)
+			return;
+
+		if (mSearchMode == SearchMode.App && mPopupSearchEditText != null) {
+			imm.showSoftInput(mPopupSearchEditText, 0);
+			return;
+		}
+
+		if (mSearchText != null)
 			imm.showSoftInput(mSearchText, 0);
 	}
 
 	private void hideKeyboard() {
 		InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-		if (imm != null)
+
+		if (imm == null)
+			return;
+
+		if (mSearchMode == SearchMode.App && mPopupSearchEditText != null) {
+			imm.hideSoftInputFromWindow(mPopupSearchEditText.getWindowToken(), 0);
+			return;
+		}
+
+		if (mSearchText != null) {
 			imm.hideSoftInputFromWindow(mSearchText.getWindowToken(), 0);
+		}
 	}
 
 	private void search(int direction) {
@@ -963,6 +1126,212 @@ public class DocumentActivity extends Activity
 		}
 		return super.onSearchRequested();
 	}
+
+	//---------- GalePress Integration - Search [Start]
+
+	public void openSearchPopup() {
+		// Inflate the popup_layout.xml
+		RelativeLayout viewGroup = (RelativeLayout) findViewById(R.id.reader_search_popup);
+		LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		final View layout = layoutInflater.inflate(R.layout.reader_search_popup, viewGroup);
+
+		// Creating the PopupWindow
+		mSearchPopup = new PopupWindow(this);
+		mSearchPopup.setContentView(layout);
+		mSearchPopup.setWidth(RelativeLayout.LayoutParams.MATCH_PARENT);
+		mSearchPopup.setHeight(RelativeLayout.LayoutParams.MATCH_PARENT);
+		mSearchPopup.setFocusable(true);
+		mSearchPopup.setOnDismissListener(new PopupWindow.OnDismissListener() {
+			@Override
+			public void onDismiss() {
+				if (mReaderSearchWord != null && mReaderSearchWord.length() == 0) {
+					searchModeOff();
+				}
+			}
+		});
+		mSearchPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+		mPopupSearchEditText = ((EditText) layout.findViewById(R.id.popup_searchText));
+		if (mReaderSearchWord != null)
+			mPopupSearchEditText.setText(mReaderSearchWord);
+
+		mPopupSearchEditText.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
+		mPopupSearchEditText.setHintTextColor(ThemeColor.getInstance().getOppositeThemeColor());
+		mPopupSearchEditText.requestFocus();
+		mPopupSearchEditText.setTypeface(ThemeFont.getInstance().getLightFont(this));
+		mPopupSearchEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+			public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+				if (actionId == EditorInfo.IME_ACTION_DONE  && mPopupSearchEditText.getText().length() > 0) {
+					if(mSearchPopup != null && mSearchPopup.isShowing() && mSearchProgressBaseView != null && mSearchClearBaseView != null) {
+						mSearchProgressBaseView.setVisibility(View.VISIBLE);
+						mSearchClearBaseView.setVisibility(View.GONE);
+					}
+					mReaderSearchWord = mPopupSearchEditText.getText().toString();
+					MuPDFLibrary.getAppInstance().fullTextSearchForReader(mPopupSearchEditText.getText().toString(), getContentId(), DocumentActivity.this);
+				}
+				return false;
+			}
+		});
+		mPopupSearchEditText.setOnKeyListener(new View.OnKeyListener() {
+			public boolean onKey(View v, int keyCode, KeyEvent event) {
+				if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER && mPopupSearchEditText.getText().length() > 0) {
+					if (mSearchPopup != null && mSearchPopup.isShowing() && mSearchProgressBaseView != null && mSearchClearBaseView != null) {
+						mSearchProgressBaseView.setVisibility(View.VISIBLE);
+						mSearchClearBaseView.setVisibility(View.GONE);
+					}
+					mReaderSearchWord = mPopupSearchEditText.getText().toString();
+					MuPDFLibrary.getAppInstance().fullTextSearchForReader(mPopupSearchEditText.getText().toString(), getContentId(), DocumentActivity.this);
+				}
+				return false;
+			}
+		});
+
+		// clear butonu
+		layout.findViewById(R.id.popup_clearSearch).setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.reader_search_clear, ThemeIcon.THEME_COLOR_FILTER));
+
+		// search progress
+		mSearchProgressBaseView = (LinearLayout) layout.findViewById(R.id.popup_progress_search_base);
+		((ProgressBar)layout.findViewById(R.id.popup_search_progress)).getIndeterminateDrawable().setColorFilter(ThemeColor.getInstance().getStrongOppositeThemeColor(), android.graphics.PorterDuff.Mode.MULTIPLY);
+
+		// textview background
+		((RelativeLayout) mPopupSearchEditText.getParent()).setBackgroundColor(ThemeColor.getInstance().getThemeColor());
+
+		// input background
+		((LinearLayout) mPopupSearchEditText.getParent().getParent()).setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
+
+		mSearchClearBaseView = (LinearLayout) layout.findViewById(R.id.popup_clear_search_base);
+		mSearchClearBaseView.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if(mSearchPopup != null && mSearchPopup.isShowing() && mSearchProgressBaseView != null && mSearchClearBaseView != null) {
+					mSearchProgressBaseView.setVisibility(View.GONE);
+					mSearchClearBaseView.setVisibility(View.VISIBLE);
+				}
+				mPopupSearchEditText.setText("");
+				mReaderSearchWord = mPopupSearchEditText.getText().toString();
+				setReaderSearchResult(new ArrayList<GPReaderSearchResult>());
+				completeSearch(false);
+			}
+		});
+
+
+		mSearhResultListView = ((ListView) layout.findViewById(R.id.reader_search_list));
+		if(mReaderSearchResult != null) {
+			searchAdapter = new SearchResultAdapter(mReaderSearchResult, DocumentActivity.this);
+		}
+		else {
+			searchAdapter = new SearchResultAdapter(new ArrayList<GPReaderSearchResult>(), this);
+		}
+
+		mSearhResultListView.setAdapter(searchAdapter);
+		mSearhResultListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				if(mReaderSearchResult != null && mReaderSearchResult.size() > position) {
+					int resultPageIndex = mReaderSearchResult.get(position).getPage() - 1;
+					mDocView.setDisplayedViewIndex(resultPageIndex);
+
+					// refresh page preview bar
+					scrollToThumbnailPagePreviewIndex(resultPageIndex);
+					mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+					searchModeOff();
+				}
+			}
+		});
+
+		layout.findViewById(R.id.reader_search_popup).setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				searchModeOff();
+			}
+		});
+
+		// reader popup background
+		layout.findViewById(R.id.reader_search_popup_base).setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
+
+		mSearchPopup.showAsDropDown(mTopBarSwitcher, 0, -mTopBarSwitcher.getHeight());
+	}
+
+	public void completeSearch(boolean showNotFoundMessage) {
+		if(mSearchPopup == null || !mSearchPopup.isShowing())
+			return;
+
+		if(mSearchProgressBaseView != null && mSearchClearBaseView != null) {
+			mSearchProgressBaseView.setVisibility(View.GONE);
+			mSearchClearBaseView.setVisibility(View.VISIBLE);
+		}
+
+		if (mSearchDialog != null) {
+			mSearchDialog.dismiss();
+		}
+
+		if (searchAdapter != null && mReaderSearchResult != null
+				&& mReaderSearchResult.size() > 0) {
+			searchAdapter.textSearchList = mReaderSearchResult;
+			searchAdapter.notifyDataSetChanged();
+		} else {
+			if(searchAdapter != null && mSearhResultListView != null) {
+				searchAdapter.textSearchList = new ArrayList<GPReaderSearchResult>();
+				searchAdapter.notifyDataSetChanged();
+			}
+			if (showNotFoundMessage) {
+				Toast.makeText(DocumentActivity.this, getResources().getString(R.string.text_not_found), Toast.LENGTH_SHORT).show();
+			}
+		}
+
+	}
+
+	public class SearchResultAdapter extends BaseAdapter {
+
+		private ArrayList<GPReaderSearchResult> textSearchList;
+		private Context mContext;
+
+		public SearchResultAdapter(ArrayList<GPReaderSearchResult> textSearchList, Context mContext) {
+			this.mContext = mContext;
+			this.textSearchList = textSearchList;
+		}
+
+		@Override
+		public int getCount() {
+			return textSearchList.size();
+		}
+
+		@Override
+		public Object getItem(int position) {
+			return textSearchList.get(position);
+		}
+
+		@Override
+		public long getItemId(int position) {
+			return 0;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			if (convertView == null) {
+				LayoutInflater mInflater = (LayoutInflater)
+						mContext.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
+				convertView = mInflater.inflate(R.layout.reader_search_listview_item, null);
+			}
+
+			GPReaderSearchResult pageItem = textSearchList.get(position);
+			TextView title = ((TextView) convertView.findViewById(R.id.reader_search_result_page_title));
+			title.setText(Html.fromHtml(pageItem.getText()).toString());
+			title.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
+			title.setTypeface(ThemeFont.getInstance().getRegularFont(mContext));
+
+
+			TextView page = ((TextView) convertView.findViewById(R.id.reader_search_result_page_page));
+			page.setText("" + (pageItem.getPage()));
+			page.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
+			page.setTypeface(ThemeFont.getInstance().getLightFont(mContext));
+
+			return convertView;
+		}
+	}
+
+	//---------- GalePress Integration - Search [End]
+
 
 	@Override
 	public boolean onPrepareOptionsMenu(Menu menu) {
