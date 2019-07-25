@@ -47,7 +47,7 @@
 				android:layout_centerVertical="true"
 				android:layout_toLeftOf="@+id/reflowButton"
 				android:contentDescription="@string/toggle_links"
-				android:background="@drawable/button"
+				android:background="@android:color/transparent"
 				android:src="@drawable/ic_link"
 				android:visibility="gone"/>
 
@@ -58,7 +58,7 @@
 				android:layout_centerVertical="true"
 				android:layout_toLeftOf="@+id/outlineButtonBase"
 				android:contentDescription="@string/toggle_reflow_mode"
-				android:background="@drawable/button"
+				android:background="@android:color/transparent"
 				android:src="@drawable/ic_reflow"
 				android:visibility="gone"/>
 
@@ -114,7 +114,7 @@
 					android:id="@+id/shareButton"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
-					android:background="@drawable/button"
+					android:background="@android:color/transparent"
 					/>
 			</LinearLayout>
 
