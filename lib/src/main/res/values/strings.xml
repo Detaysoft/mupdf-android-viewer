@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="open">Open</string>
+	<string name="close">Close</string>
 	<string name="cancel">Cancel</string>
 	<string name="cannot_open_document">Cannot open document</string>
 	<string name="cannot_open_document_Reason">Cannot open document: %1$s</string>

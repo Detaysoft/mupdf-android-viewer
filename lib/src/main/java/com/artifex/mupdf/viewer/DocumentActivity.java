@@ -19,6 +19,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -55,6 +58,7 @@ import android.widget.ViewAnimator;
 
 import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
 import com.artifex.mupdf.viewer.gp.CropAndShareActivity;
+import com.artifex.mupdf.viewer.gp.OutlineAdapter;
 import com.artifex.mupdf.viewer.gp.RecyclerAdapter;
 import com.artifex.mupdf.viewer.gp.models.GPContent;
 import com.artifex.mupdf.viewer.gp.models.GPReaderSearchResult;
@@ -105,6 +109,9 @@ public class DocumentActivity extends Activity
 	private EditText     mSearchText;
 	private SearchTask   mSearchTask;
 
+	// GP drawer
+	private DrawerLayout mDrawerLayout;
+
 	// Search mode GalePress or mupdf lib
 	private SearchMode mSearchMode = SearchMode.Lib;
 
@@ -137,7 +144,6 @@ public class DocumentActivity extends Activity
 	private final Handler mHandler = new Handler();
 	private boolean mAlertsActive= false;
 	private AlertDialog mAlertDialog;
-	private ArrayList<OutlineActivity.Item> mFlatOutline;
 
 	protected int mDisplayDPI;
 	private int mLayoutEM = 10;
@@ -240,7 +246,7 @@ public class DocumentActivity extends Activity
 
 					@Override
 					public String getName() {
-						return "document";
+						return core.getTitle();
 					}
 
 					@Override
@@ -362,7 +368,6 @@ public class DocumentActivity extends Activity
 
 	public void relayoutDocument() {
 		int loc = core.layout(mDocView.mCurrent, mLayoutW, mLayoutH, mLayoutEM);
-		mFlatOutline = null;
 		mDocView.mHistory.clear();
 		mDocView.refresh();
 		mDocView.setDisplayedViewIndex(loc);
@@ -538,28 +543,9 @@ public class DocumentActivity extends Activity
 			});
 		}
 
-		if (core.hasOutline()) {
-			mOutlineButton.setOnClickListener(new View.OnClickListener() {
-				public void onClick(View v) {
-					if (mFlatOutline == null)
-						mFlatOutline = core.getOutline();
-					if (mFlatOutline != null) {
-						Intent intent = new Intent(DocumentActivity.this, OutlineActivity.class);
-						Bundle bundle = new Bundle();
-						bundle.putInt("POSITION", mDocView.getDisplayedViewIndex());
-						bundle.putSerializable("OUTLINE", mFlatOutline);
-						intent.putExtras(bundle);
-						startActivityForResult(intent, OUTLINE_REQUEST);
-					}
-				}
-			});
-		} else {
-			mOutlineButton.setVisibility(View.GONE);
-		}
-
 		// Reenstate last state if it was recorded
 		SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
-		mDocView.setDisplayedViewIndex(prefs.getInt("page"+mFileName, 0));
+		mDocView.setDisplayedViewIndex(prefs.getInt("page"+ mFileName, 0));
 
 		// GalePress don't show buttons in first open instead show a button to let user know there are buttons
 		 if (savedInstanceState == null || !savedInstanceState.getBoolean("ButtonsHidden", false))
@@ -568,12 +554,75 @@ public class DocumentActivity extends Activity
 		if(savedInstanceState != null && savedInstanceState.getBoolean("SearchMode", false))
 			searchModeOn();
 
+		//---------- GalePress Integration - Drawer [Start]
+
 		// Stick the document view and the buttons overlay into a parent view
-		RelativeLayout layout = new RelativeLayout(this);
-		layout.setBackgroundColor(Color.DKGRAY);
-		layout.addView(mDocView);
-		layout.addView(mButtonsView);
-		setContentView(layout);
+		if (core.hasOutline()) {
+
+			mDrawerLayout = (DrawerLayout) getLayoutInflater().inflate(R.layout.pdf_reader, null);
+
+			final RelativeLayout layout = mDrawerLayout.findViewById(R.id.reader);
+			layout.setBackgroundColor(Color.DKGRAY);
+			layout.addView(mDocView);
+			layout.addView(mButtonsView);
+			setContentView(mDrawerLayout);
+
+			ActionBarDrawerToggle actionBarDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout,R.string.open, R.string.close) {
+				@Override
+				public void onDrawerSlide(View drawerView, float slideOffset) {
+					super.onDrawerSlide(drawerView, slideOffset);
+					float slideX = drawerView.getWidth() * slideOffset;
+					layout.setTranslationX(slideX);
+				}
+			};
+
+			mDrawerLayout.addDrawerListener(actionBarDrawerToggle);
+			mDrawerLayout.setScrimColor(Color.TRANSPARENT);
+
+			// left menu title
+			TextView menuTitle = (TextView) findViewById(R.id.reader_left_menu_title);
+			menuTitle.setText(this.content.getName());
+			menuTitle.setTextColor(ThemeColor.getInstance().getThemeColor());
+			menuTitle.setTypeface(ThemeFont.getInstance().getSemiBoldItalicFont(this));
+			menuTitle.setBackgroundColor(ThemeColor.getInstance().getForegroundColor());
+
+			ListView leftList = (ListView) findViewById(R.id.reader_left_menu_listView);
+			leftList.setBackgroundColor(ThemeColor.getInstance().getForegroundColor());
+			leftList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+				@Override
+				public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+					mDocView.pushHistory();
+					int resultPageIndex = core.getOutline().get(position).page;
+					mDocView.setDisplayedViewIndex(resultPageIndex);
+
+					// refresh page preview bar
+					scrollToThumbnailPagePreviewIndex(resultPageIndex);
+					mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+				}
+			});
+
+			leftList.setAdapter(new OutlineAdapter(this, getLayoutInflater(), core.getOutline()));
+
+			mOutlineButton.setOnClickListener(new View.OnClickListener() {
+				public void onClick(View v) {
+					mDrawerLayout.openDrawer(GravityCompat.START);
+				}
+			});
+		}
+		else {
+
+			// hide outline button
+			mOutlineButton.setVisibility(View.GONE);
+
+			// set content view
+			RelativeLayout layout = new RelativeLayout(this);
+			layout.setBackgroundColor(Color.DKGRAY);
+			layout.addView(mDocView);
+			layout.addView(mButtonsView);
+			setContentView(layout);
+		}
+
+		//---------- GalePress Integration - Drawer [End]
 	}
 
 	public void createLibSearchUI() {
