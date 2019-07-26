@@ -3,7 +3,6 @@ package com.artifex.mupdf.viewer.gp.models;
 import android.content.Context;
 import android.location.Location;
 import android.net.Uri;
-import android.util.Log;
 
 import com.artifex.mupdf.fitz.Link;
 import com.artifex.mupdf.viewer.DocumentActivity;
@@ -38,13 +37,20 @@ public class GPAnnotationInfo {
     public int mapType = 0;
     public boolean isMailto = false;
     public boolean isSuitabale = true;
+    public int internalLinkPageIndex = 0;
 
     public GPAnnotationInfo(Link muPdfLink) {
         this.muPdfLink = muPdfLink;
+
+        if (muPdfLink.uri == null) {
+            componentAnnotationTypeId = COMPONENT_TYPE_ID_BOOKMARK;
+            isInternal = true;
+            internalLinkPageIndex = muPdfLink.page;
+            return;
+        }
+
         url = muPdfLink.uri;
         Uri uri = Uri.parse(url);
-
-        Log.e("PDF EMBEDDED URL", ""+url);
 
         if(uri.isHierarchical()) {
 

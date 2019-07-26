@@ -430,7 +430,7 @@ public class DocumentActivity extends Activity
 			public void onConfigurationChanged(Configuration newConfig) {
 				super.onConfigurationChanged(newConfig);
 
-				// GalePress integration manage layout of custom views on orientation change
+				// GalePress integration: manage layout of custom views on orientation change
 				relayoutCustomViews(mCurrent);
 			}
 		};
@@ -826,7 +826,7 @@ public class DocumentActivity extends Activity
 	/*
 	 * display page of the given index and center it
 	 * */
-	public void onPagePreviewItemClick(int index) {
+	public void jumpToPageAtIndex(int index) {
 		// display selected page
 		mDocView.pushHistory();
 		mDocView.setDisplayedViewIndex(index);

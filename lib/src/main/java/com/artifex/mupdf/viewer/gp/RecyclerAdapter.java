@@ -74,7 +74,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
                 if (position == selectedIndex)
                     return;
 
-                mDocumentActivity.onPagePreviewItemClick(position);
+                mDocumentActivity.jumpToPageAtIndex(position);
                 holder.pageNumber.setVisibility(View.VISIBLE);
                 lastSelectedViewHolder.pageNumber.setVisibility(View.GONE);
                 lastSelectedViewHolder = holder;

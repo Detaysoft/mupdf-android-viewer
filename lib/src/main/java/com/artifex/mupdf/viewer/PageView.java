@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 // Make our ImageViews opaque to optimize redraw
-class OpaqueImageView extends ImageView {
+class OpaqueImageView extends android.support.v7.widget.AppCompatImageView {
 
 	public OpaqueImageView(Context context) {
 		super(context);
@@ -487,8 +487,6 @@ public class PageView extends ViewGroup {
 		final float scale = mSourceScale*(float)getWidth()/(float)mSize.x;
 
 		for (Link l : mLinks){
-			if (l.uri == null)
-				continue;
 
 			final GPAnnotationInfo link = new GPAnnotationInfo(l);
 			mGPLinks.add(link);
@@ -501,18 +499,32 @@ public class PageView extends ViewGroup {
 			CustomPulseProgress progressBar;
 
 			if(!link.isInternal && !link.isModal) {
-				Log.e("mGetLinkInfo", "modal and internal link");
+				Log.e("mGetLinkInfo", "Not a modal and internal link");
 				int progressSize = 40;
 				progressBar = new CustomPulseProgress(mContext);
 				progressBar.layout((left+right)/2 - progressSize/2, (top+bottom)/2 - progressSize/2, (left+right)/2+progressSize, (top+bottom)/2+progressSize);
 
 			}
 			else {
-				Log.e("mGetLinkInfo", "Not a modal and internal link");
+				Log.e("mGetLinkInfo", "modal and internal link");
 				progressBar = null;
 			}
 
-			if((link.isWebAnnotation())){
+			if (link.componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_BOOKMARK) {
+				ViewAnnotation view = new ViewAnnotation(mContext, link);
+				view.layout(left,top,right,bottom);
+				view.setBackgroundColor(Color.TRANSPARENT);
+				view.setTag("pagelink");
+				view.readerView = ((DocumentActivity) mContext).getReaderView();
+				view.setOnClickListener(new OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						((DocumentActivity) mContext).jumpToPageAtIndex(link.internalLinkPageIndex);
+					}
+				});
+				addView(view);
+			}
+			else if((link.isWebAnnotation())){
 				if(link.isModal){
 					Button modalButton = new Button(mContext);
 					modalButton.layout(left,top,right,bottom);
