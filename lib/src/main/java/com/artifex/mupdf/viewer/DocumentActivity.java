@@ -1018,16 +1018,10 @@ public class DocumentActivity extends Activity
 		mRecyclerPagePreview.setVisibility(View.INVISIBLE);
 
 		// GP search button
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-			mSearchButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_search,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
-		else
-			mSearchButton.setBackgroundDrawable(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_search,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+		mSearchButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_search,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
 
 		// GP table of contens
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-			mOutlineButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_contents,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
-		else
-			mOutlineButton.setBackgroundDrawable(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_contents,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+		mOutlineButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_contents,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
 
 		// GP switcher
 		mTopBarSwitcher.setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
