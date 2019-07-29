@@ -321,6 +321,16 @@ public class PageView extends ViewGroup {
 
 	//---------- GalePress Integration [Start]
 
+	private void bringAnnotationsToFront(PageView pageView) {
+		ArrayList<View> gpAnnotations = new ArrayList<View>();
+		for (int i = 0; i < pageView.getChildCount(); i++) {
+			View view = (View) pageView.getChildAt(i);
+			if (view instanceof WebView) {
+				view.bringToFront();
+			}
+		}
+	}
+
 	private void clearSomeCoolAnnotationStaff(PageView pageView) {
 		clearGPWebAnnotations(pageView);
 		clearGPModals(pageView);
@@ -506,7 +516,7 @@ public class PageView extends ViewGroup {
 
 			}
 			else {
-				Log.e("mGetLinkInfo", "modal and internal link");
+				Log.e("mGetLinkInfo", "modal or internal link");
 				progressBar = null;
 			}
 
@@ -800,6 +810,8 @@ public class PageView extends ViewGroup {
 				mPatch.setScaleType(ImageView.ScaleType.MATRIX);
 				addView(mPatch);
 				mSearchView.bringToFront();
+				bringAnnotationsToFront(this);
+
 			}
 
 			CancellableTaskDefinition<Void, Void> task;
