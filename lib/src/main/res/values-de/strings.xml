@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="open">Offnen</string>
+	<string name="close">Schließen</string>
+	<string name="cancel">Abbrechen</string>
+	<string name="cannot_open_document">Dokument kann nicht geöffnet werden</string>
+	<string name="cannot_open_document_Reason">Dokument kann nicht geöffnet werden: %1$s</string>
+	<string name="dismiss">Verwerfen</string>
+	<string name="enter_password">Passwort eingeben</string>
+	<string name="no_further_occurrences_found">Keine weiteren Treffer</string>
+	<string name="not_supported">Nicht unterstützt</string>
+	<string name="okay">OK</string>
+	<string name="search">Suchen</string>
+	<string name="searching_">Suche…</string>
+	<string name="text_not_found">Ergebnis nicht gefunden</string>
+
+	<string name="title_activity_crop">Zuschneiden und Aktivität teilen</string>
+
+	<string name="unexpected_error">Unerwarteter Fehler</string>
+	<string name="cannot_open_crop">Ernte öffnet sich nicht</string>
+
+	<string name="choose_an_app">Anwendung auswählen</string>
+
+	<string name="toggle_links">Markiere und aktiviere Verknüpfungen</string>
+	<string name="toggle_reflow_mode">Toggle reflow mode</string>
+	<string name="outline_title">Inhaltsverzeichnis</string>
+	<string name="more">Mehr</string>
+
+</resources>
