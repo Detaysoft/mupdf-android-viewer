@@ -564,6 +564,9 @@ public class PageView extends ViewGroup {
 					web.setId(atomicInteger.incrementAndGet());
 					link.webViewId = web.getId();
 
+					progressBar.setId(link.webViewId);
+
+
 					if (link.isWebAnnotation()) {
 						web.loadUrl(url);
 					}
@@ -716,17 +719,15 @@ public class PageView extends ViewGroup {
 
 		if (mGPLinks != null) {
 			{
-				PageView pageView = (PageView) this;
+				PageView pageView = this;
 				for (int i = 0; i < pageView.getChildCount(); i++) {
 					View view = pageView.getChildAt(i);
-
 					if (view instanceof WebView) { //Annotation viewlar WebView
 						float original_x;
 						float original_y;
 						if (pageView.mGPLinks != null) {
 							for (GPAnnotationInfo link : pageView.mGPLinks) {
 								if (((GPAnnotationInfo) link).webViewId == view.getId()) {
-
 									original_x = link.muPdfLink.bounds.x0 * pageView.mSourceScale;
 									original_y = link.muPdfLink.bounds.y0 * pageView.mSourceScale;
 									view.setPivotX(0);
@@ -740,38 +741,33 @@ public class PageView extends ViewGroup {
 							}
 						}
 					} else if (view instanceof CustomPulseProgress) { //interaktif icerikler uzerindeki animasyon view
-
-						float original_x;
-						float original_y;
-						int progressSize = 40;
-						CustomPulseProgress progress = (CustomPulseProgress) view;
-						if (pageView.mGPLinks != null) {
-							for (GPAnnotationInfo link : pageView.mGPLinks) {
-								if (link.webViewId == view.getId()) {
-									original_x = (link.muPdfLink.bounds.x0 + link.muPdfLink.bounds.x1) / 2 * pageView.mSourceScale - progressSize / 2;
-									original_y = (link.muPdfLink.bounds.y0 + link.muPdfLink.bounds.y1) / 2 * pageView.mSourceScale - progressSize / 2;
-									progress.setPivotX(0);
-									progress.setPivotY(0);
-									progress.setX(original_x * w/(float)mSize.x);
-									progress.setY(original_y * h/(float)mSize.y);
-									progress.setScaleX(w/(float)mSize.x);
-									progress.setScaleY(h/(float)mSize.y);
-									progress.invalidate();
-								}
-							}
-						}
-
-					}
+						  float original_x;
+						  float original_y;
+						  int progressSize = 40;
+						  CustomPulseProgress progress = (CustomPulseProgress) view;
+						  if (pageView.mGPLinks != null) {
+							  for (GPAnnotationInfo link : pageView.mGPLinks) {
+                                  if (((GPAnnotationInfo) link).webViewId == view.getId()) {
+                                      original_x = (link.muPdfLink.bounds.x0 + link.muPdfLink.bounds.x1) / 2 * pageView.mSourceScale - progressSize / 2;
+                                      original_y = (link.muPdfLink.bounds.y0 + link.muPdfLink.bounds.y1) / 2 * pageView.mSourceScale - progressSize / 2;
+									  progress.setPivotX(0);
+									  progress.setPivotY(0);
+									  progress.setX(original_x * w / (float) mSize.x);
+									  progress.setY(original_y * h / (float) mSize.y);
+									  progress.setScaleX(w / (float) mSize.x);
+									  progress.setScaleY(h / (float) mSize.y);
+									  progress.invalidate();
+								  }
+							  }
+						  }
+					  }
 				}
-				// requestLayout();
 			}
-
+			//---------- GalePress Integration [End]
 		}
-
-		//---------- GalePress Integration [End]
 	}
-
-	public void updateHq(boolean update) {
+	
+    public void updateHq(boolean update) {
 		Rect viewArea = new Rect(getLeft(),getTop(),getRight(),getBottom());
 		if (viewArea.width() == mSize.x || viewArea.height() == mSize.y) {
 			// If the viewArea's size matches the unzoomed size, there is no need for an hq patch
