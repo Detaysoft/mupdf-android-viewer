@@ -26,6 +26,17 @@ import android.widget.Scroller;
 public class ReaderView
 		extends AdapterView<Adapter>
 		implements GestureDetector.OnGestureListener, ScaleGestureDetector.OnScaleGestureListener, Runnable {
+
+	/*
+	*  GalePress page display modes
+	*  TWO: display two pages
+	*  SINGLE: display one page
+	* */
+	enum DisplayPages {
+		SINGLE,
+		TWO
+	}
+
 	private Context mContext;
 	private boolean mLinksEnabled = false;
 	private boolean tapDisabled = false;
@@ -44,6 +55,8 @@ public class ReaderView
 	private static final float MAX_SCALE        = 64.0f;
 
 	private static final boolean HORIZONTAL_SCROLLING = true;
+
+	protected DisplayPages displayPages = DisplayPages.SINGLE; // GP Display Pages
 
 	private PageAdapter           mAdapter;
 	protected int               mCurrent;    // Adapter's index for the current view
