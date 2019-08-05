@@ -78,15 +78,12 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
                 if (position == selectedIndex)
                     return;
 
-
                 mDocumentActivity.jumpToPageAtIndex(position);
-              //  holder.pageNumber.setVisibility(VISIBLE);
-              //  lastSelectedViewHolder.pageNumber.setVisibility(View.GONE);
+                lastSelectedViewHolder.pageNumber.setVisibility(View.GONE);
                 viewVisibleAnimator(holder.pageNumber);
-                viewGoneAnimator(lastSelectedViewHolder.pageNumber);
+                //holder.pageNumber.setVisibility(VISIBLE);
                 lastSelectedViewHolder = holder;
                 selectedIndex = position;
-
             }
         });
 
@@ -95,35 +92,21 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
         holder.pageNumber.setTypeface(ThemeFont.getInstance().getMediumItalicFont(mDocumentActivity.getApplicationContext()));
 
         if (position == selectedIndex) {
-        //   holder.pageNumber.setVisibility(VISIBLE);
+        //  holder.pageNumber.setVisibility(VISIBLE);
             viewVisibleAnimator(holder.pageNumber);
             lastSelectedViewHolder = holder;
         }
         else
-      //   holder.pageNumber.setVisibility(View.GONE);
-            viewGoneAnimator(holder.pageNumber);
+         holder.pageNumber.setVisibility(View.GONE);
 
-        holder.previewImage.setImageBitmap(mDataset[position].getImage());
-        holder.relativeLayout.setTag(position);
-    }
-
-    private void viewGoneAnimator(final View view) {
-
-        view.animate()
-                .alpha(0f)
-                .setDuration(150)
-                .setListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        view.setVisibility(View.GONE);
-                    }
-                });
+         holder.previewImage.setImageBitmap(mDataset[position].getImage());
+         holder.relativeLayout.setTag(position);
     }
 
     private void viewVisibleAnimator(final View view) {
         view.animate()
                 .alpha(1f)
-                .setDuration(150)
+                .setDuration(100)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -142,6 +125,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
     public int getItemCount() {
         return mDataset.length;
     }
+
 
     public void setSelectedIndex(int selectedIndex) {
         this.selectedIndex = selectedIndex;
