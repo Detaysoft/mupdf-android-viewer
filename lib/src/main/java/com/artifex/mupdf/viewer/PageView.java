@@ -564,8 +564,8 @@ public class PageView extends ViewGroup {
 					web.setId(atomicInteger.incrementAndGet());
 					link.webViewId = web.getId();
 
-					progressBar.setId(link.webViewId);
-
+					if(!link.isInternal && !link.isModal)
+						progressBar.setId(link.webViewId);
 
 					if (link.isWebAnnotation()) {
 						web.loadUrl(url);
