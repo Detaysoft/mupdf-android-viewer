@@ -8,6 +8,7 @@ import java.util.Stack;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.net.Uri;
@@ -110,6 +111,10 @@ public class ReaderView
 		mScroller = new Scroller(context);
 		mStepper = new Stepper(this, this);
 		mHistory = new Stack<Integer>();
+
+		// GalePress display two pages
+		displayPages = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ?
+				DisplayPages.TWO : DisplayPages.SINGLE;
 
 		// Get the screen size etc to customise tap margins.
 		// We calculate the size of 1 inch of the screen for tapping.
