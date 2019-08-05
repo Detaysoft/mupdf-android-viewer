@@ -64,7 +64,6 @@ public class LibraryActivity extends ListActivity
 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
 		/* Hide 'home' icon on old themes */
 		getActionBar().setDisplayShowHomeEnabled(false);
 

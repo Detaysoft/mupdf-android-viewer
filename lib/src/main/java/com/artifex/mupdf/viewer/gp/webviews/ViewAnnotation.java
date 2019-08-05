@@ -1,10 +1,10 @@
 package com.artifex.mupdf.viewer.gp.webviews;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-
 import com.artifex.mupdf.viewer.gp.models.GPAnnotationInfo;
 import com.artifex.mupdf.viewer.ReaderView;
 
@@ -40,6 +40,7 @@ public class ViewAnnotation extends View {
         setCustomTouchListener();
     }
     
+    @SuppressLint("ClickableViewAccessibility")
     public void setCustomTouchListener(){
         this.setOnTouchListener(new OnTouchListener() {
             @Override

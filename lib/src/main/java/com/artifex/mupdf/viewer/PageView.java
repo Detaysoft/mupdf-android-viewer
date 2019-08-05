@@ -8,7 +8,6 @@ import com.artifex.mupdf.viewer.gp.CustomPulseProgress;
 import com.artifex.mupdf.viewer.gp.webviews.ExtraWebViewActivity;
 import com.artifex.mupdf.viewer.gp.webviews.ViewAnnotation;
 import com.artifex.mupdf.viewer.gp.webviews.WebViewAnnotation;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -23,7 +22,6 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
@@ -35,7 +33,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.os.AsyncTask;
 import android.widget.Toast;
-
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -57,7 +54,7 @@ public class PageView extends ViewGroup {
 
 	private static final int HIGHLIGHT_COLOR = 0x80cc6600;
 	private static final int LINK_COLOR = 0x800066cc;
-	private static final int BOX_COLOR = 0xFF4444FF;
+	// private static final int BOX_COLOR = 0xFF4444FF;
 	private static final int BACKGROUND_COLOR = 0xFFFFFFFF;
 	private static final int PROGRESS_DIALOG_DELAY = 200;
 
@@ -675,6 +672,8 @@ public class PageView extends ViewGroup {
 		}
 	}
 
+
+
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
 		int w = right-left;
@@ -766,7 +765,7 @@ public class PageView extends ViewGroup {
 			//---------- GalePress Integration [End]
 		}
 	}
-	
+
     public void updateHq(boolean update) {
 		Rect viewArea = new Rect(getLeft(),getTop(),getRight(),getBottom());
 		if (viewArea.width() == mSize.x || viewArea.height() == mSize.y) {
@@ -913,9 +912,9 @@ public class PageView extends ViewGroup {
 			public Void doInBackground(Cookie cookie, Void ... params) {
 				// Workaround bug in Android Honeycomb 3.x, where the bitmap generation count
 				// is not incremented when drawing.
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB &&
-						Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-					bm.eraseColor(0);
+				// if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB &&
+				//		Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+				//	bm.eraseColor(0);
 				mCore.drawPage(bm, mPageNumber, sizeX, sizeY, patchX, patchY, patchWidth, patchHeight, cookie);
 				return null;
 			}
@@ -931,9 +930,9 @@ public class PageView extends ViewGroup {
 			public Void doInBackground(Cookie cookie, Void ... params) {
 				// Workaround bug in Android Honeycomb 3.x, where the bitmap generation count
 				// is not incremented when drawing.
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB &&
-						Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-					bm.eraseColor(0);
+				// if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB &&
+				//		Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+				//	bm.eraseColor(0);
 				mCore.updatePage(bm, mPageNumber, sizeX, sizeY, patchX, patchY, patchWidth, patchHeight, cookie);
 				return null;
 			}

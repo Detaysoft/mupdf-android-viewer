@@ -16,9 +16,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -55,7 +53,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
-
 import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
 import com.artifex.mupdf.viewer.gp.CropAndShareActivity;
 import com.artifex.mupdf.viewer.gp.OutlineAdapter;
@@ -66,7 +63,6 @@ import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 import com.artifex.mupdf.viewer.gp.util.ThemeFont;
 import com.artifex.mupdf.viewer.gp.util.ThemeIcon;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -141,9 +137,7 @@ public class DocumentActivity extends Activity
 
 	private AlertDialog.Builder mAlertBuilder;
 	private boolean    mLinkHighlight = false;
-	private final Handler mHandler = new Handler();
-	private boolean mAlertsActive= false;
-	private AlertDialog mAlertDialog;
+
 
 	protected int mDisplayDPI;
 	private int mLayoutEM = 10;
@@ -211,7 +205,11 @@ public class DocumentActivity extends Activity
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
 		mDisplayDPI = (int)metrics.densityDpi;
 
+
+
 		mAlertBuilder = new AlertDialog.Builder(this);
+
+
 
 		if (core == null) {
 			if (savedInstanceState != null && savedInstanceState.containsKey("FileName")) {
@@ -334,7 +332,6 @@ public class DocumentActivity extends Activity
 			alert.show();
 			return;
 		}
-
 		createUI(savedInstanceState);
 	}
 
@@ -429,7 +426,6 @@ public class DocumentActivity extends Activity
 			@Override
 			public void onConfigurationChanged(Configuration newConfig) {
 				super.onConfigurationChanged(newConfig);
-
 				// GalePress integration: manage layout of custom views on orientation change
 				relayoutCustomViews(mCurrent);
 			}
@@ -465,9 +461,9 @@ public class DocumentActivity extends Activity
 		//---------- GalePress recycle page preview [Start]
 
 		mRecylerPagePreviewLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
-		mRecyclerPagePreview.setLayoutManager(mRecylerPagePreviewLayoutManager);
 
+		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
+	    mRecyclerPagePreview.setLayoutManager(mRecylerPagePreviewLayoutManager);
 		mRecyclerPagePreview.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
 		PagePreview[] ppArray = new PagePreview[core.countPages()];
@@ -736,10 +732,8 @@ public class DocumentActivity extends Activity
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
-
 		if (mFileName != null && mDocView != null) {
 			outState.putString("FileName", mFileName);
-
 			// Store current page in the prefs against the file name,
 			// so that we can pick it up each time the file is loaded
 			// Other info is needed only for screen-orientation change,
@@ -749,7 +743,6 @@ public class DocumentActivity extends Activity
 			edit.putInt("page"+mFileName, mDocView.getDisplayedViewIndex());
 			edit.apply();
 		}
-
 		if (!mButtonsVisible)
 			outState.putBoolean("ButtonsHidden", true);
 
@@ -763,7 +756,6 @@ public class DocumentActivity extends Activity
 
 		if (mSearchTask != null)
 			mSearchTask.stop();
-
 		if (mFileName != null && mDocView != null) {
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
@@ -818,7 +810,7 @@ public class DocumentActivity extends Activity
 	/*
 	 * scroll to index of item in thumbnail recycle view
 	 * */
-	private void scrollToThumbnailPagePreviewIndex(int index) {
+	private void scrollToThumbnailPagePreviewIndex( int index) {
 		// TODO: offset parameter needs to be dynamic
 		mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
 	}
@@ -1174,6 +1166,8 @@ public class DocumentActivity extends Activity
 			public void onAnimationRepeat(Animation animation) {}
 		});
 		mReaderShowPageThumbnailsButton.startAnimation(s11);
+
+
 	}
 
 	@Override
@@ -1385,6 +1379,7 @@ public class DocumentActivity extends Activity
 			page.setText("" + (pageItem.getPage()));
 			page.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
 			page.setTypeface(ThemeFont.getInstance().getLightFont(mContext));
+
 
 			return convertView;
 		}

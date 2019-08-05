@@ -9,7 +9,6 @@ import android.view.animation.Animation;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
-
 import com.artifex.mupdf.viewer.R;
 import com.artifex.mupdf.viewer.gp.util.ThemeIcon;
 
@@ -77,7 +76,6 @@ public class CustomPulseProgress extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-
     }
 
     public void startAnim() {

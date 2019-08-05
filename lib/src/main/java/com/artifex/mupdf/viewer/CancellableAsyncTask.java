@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer;
 
+import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 
 import java.util.concurrent.CancellationException;
@@ -22,6 +23,8 @@ public class CancellableAsyncTask<Params, Result>
 
 	}
 
+
+	@SuppressLint("StaticFieldLeak")
 	public CancellableAsyncTask(final CancellableTaskDefinition<Params, Result> task)
 	{
 		if (task == null)

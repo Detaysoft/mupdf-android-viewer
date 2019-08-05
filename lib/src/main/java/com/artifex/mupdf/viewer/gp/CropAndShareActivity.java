@@ -13,11 +13,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
-
 import com.artifex.mupdf.viewer.R;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 import com.edmodo.cropper.CropImageView;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;

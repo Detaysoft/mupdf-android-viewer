@@ -1,5 +1,8 @@
 package com.artifex.mupdf.viewer.gp;
 
+
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,12 +10,13 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-
 import com.artifex.mupdf.viewer.DocumentActivity;
 import com.artifex.mupdf.viewer.R;
 import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 import com.artifex.mupdf.viewer.gp.util.ThemeFont;
+
+import static android.view.View.VISIBLE;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> {
     private PagePreview[] mDataset;
@@ -74,11 +78,15 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
                 if (position == selectedIndex)
                     return;
 
+
                 mDocumentActivity.jumpToPageAtIndex(position);
-                holder.pageNumber.setVisibility(View.VISIBLE);
-                lastSelectedViewHolder.pageNumber.setVisibility(View.GONE);
+              //  holder.pageNumber.setVisibility(VISIBLE);
+              //  lastSelectedViewHolder.pageNumber.setVisibility(View.GONE);
+                viewVisibleAnimator(holder.pageNumber);
+                viewGoneAnimator(lastSelectedViewHolder.pageNumber);
                 lastSelectedViewHolder = holder;
                 selectedIndex = position;
+
             }
         });
 
@@ -87,15 +95,46 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
         holder.pageNumber.setTypeface(ThemeFont.getInstance().getMediumItalicFont(mDocumentActivity.getApplicationContext()));
 
         if (position == selectedIndex) {
-            holder.pageNumber.setVisibility(View.VISIBLE);
+        //   holder.pageNumber.setVisibility(VISIBLE);
+            viewVisibleAnimator(holder.pageNumber);
             lastSelectedViewHolder = holder;
         }
         else
-            holder.pageNumber.setVisibility(View.GONE);
+      //   holder.pageNumber.setVisibility(View.GONE);
+            viewGoneAnimator(holder.pageNumber);
 
         holder.previewImage.setImageBitmap(mDataset[position].getImage());
-
         holder.relativeLayout.setTag(position);
+    }
+
+    private void viewGoneAnimator(final View view) {
+
+        view.animate()
+                .alpha(0f)
+                .setDuration(150)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        view.setVisibility(View.GONE);
+                    }
+                });
+    }
+
+    private void viewVisibleAnimator(final View view) {
+        view.animate()
+                .alpha(1f)
+                .setDuration(150)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        view.setVisibility(VISIBLE);
+                    }
+                });
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return position;
     }
 
     // Return the size of your dataset (invoked by the layout manager)

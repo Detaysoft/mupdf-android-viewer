@@ -122,53 +122,50 @@
 
 		<LinearLayout
 			android:id="@+id/searchBar"
-			android:layout_width="match_parent"
-			android:layout_height="match_parent"
-			android:orientation="horizontal"
+			android:layout_width="98dp"
+			android:layout_height="88dp"
 			android:background="@android:color/transparent"
-			android:gravity="center_vertical">
+			android:gravity="center_vertical"
+			android:orientation="horizontal">
 
 			<ImageButton
 				android:id="@+id/searchClose"
 				android:layout_width="35dp"
 				android:layout_height="35dp"
+				android:layout_marginLeft="10dp"
 				android:background="@android:color/transparent"
-				android:src="@drawable/ic_close_white_24dp"
-				android:layout_marginLeft="10dp"/>
+				android:src="@drawable/ic_close_white_24dp" />
 
 			<EditText
 				android:id="@+id/searchText"
-				android:background="@android:color/transparent"
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
-				android:layout_weight="1"
 				android:layout_gravity="center"
-				android:inputType="text"
-				android:imeOptions="actionSearch"
-				android:singleLine="true"
+				android:layout_weight="1"
+				android:background="@android:color/transparent"
 				android:hint="@string/search"
-				android:textSize="16dp"
+				android:imeOptions="actionSearch"
+				android:inputType="text"
+				android:singleLine="true"
 				android:textColor="@android:color/white"
 				android:textColorHighlight="#a0a0a0"
 				android:textColorHint="#a0a0a0"
-				/>
+				android:textSize="16dp" />
 
 			<ImageButton
 				android:id="@+id/searchBack"
 				android:layout_width="35dp"
 				android:layout_height="35dp"
 				android:background="@android:color/transparent"
-				android:src="@drawable/ic_chevron_left_white_24dp"
-				/>
+				android:src="@drawable/ic_chevron_left_white_24dp" />
 
 			<ImageButton
 				android:id="@+id/searchForward"
 				android:layout_width="35dp"
 				android:layout_height="35dp"
-				android:background="@android:color/transparent"
-				android:src="@drawable/ic_chevron_right_white_24dp"
 				android:layout_marginRight="10dp"
-				/>
+				android:background="@android:color/transparent"
+				android:src="@drawable/ic_chevron_right_white_24dp" />
 
 		</LinearLayout>
 
@@ -201,12 +198,11 @@
 		>
 
 		<android.support.v7.widget.RecyclerView
-			android:id="@+id/recyclerPagePreview"
+            android:id="@+id/recyclerPagePreview"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
 			android:orientation="horizontal"
 			android:background="@android:color/black"/>
-
 	</RelativeLayout>
 
 </RelativeLayout>

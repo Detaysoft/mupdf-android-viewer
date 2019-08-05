@@ -9,8 +9,8 @@ public class MuPDFLibrary extends Application {
     public final static String TAG = "MuPDFLibrary";
 
     public interface ApplicationInterface {
-        public void setMuPDFActivity(DocumentActivity documentActivity);
-        public void fullTextSearchForReader(String searchText, String contentId, DocumentActivity documentActivity);
+         void setMuPDFActivity(DocumentActivity documentActivity);
+         void fullTextSearchForReader(String searchText, String contentId, DocumentActivity documentActivity);
         // public abstract void commitStatisticsToDB(L_Statistic statistic);
     }
 

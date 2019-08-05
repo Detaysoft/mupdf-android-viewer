@@ -6,12 +6,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
-
 import com.artifex.mupdf.viewer.OutlineActivity;
 import com.artifex.mupdf.viewer.R;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 import com.artifex.mupdf.viewer.gp.util.ThemeFont;
-
 import java.util.ArrayList;
 
 public class OutlineAdapter extends BaseAdapter {

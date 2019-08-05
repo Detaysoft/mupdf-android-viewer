@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -45,6 +46,8 @@ public class PageAdapter extends BaseAdapter {
 		mPageSizes.clear();
 	}
 
+
+
 	public View getView(final int position, View convertView, ViewGroup parent) {
 		final PageView pageView;
 		if (convertView == null) {
@@ -52,6 +55,7 @@ public class PageAdapter extends BaseAdapter {
 				mSharedHqBm = Bitmap.createBitmap(parent.getWidth(), parent.getHeight(), Bitmap.Config.ARGB_8888);
 
 			pageView = new PageView(mContext, mCore, new Point(parent.getWidth(), parent.getHeight()), mSharedHqBm);
+
 		} else {
 			pageView = (PageView) convertView;
 		}
@@ -65,7 +69,7 @@ public class PageAdapter extends BaseAdapter {
 			// Page size as yet unknown. Blank it for now, and
 			// start a background task to find the size
 			pageView.blank(position);
-			AsyncTask<Void,Void,PointF> sizingTask = new AsyncTask<Void,Void,PointF>() {
+			@SuppressLint("StaticFieldLeak") AsyncTask<Void,Void,PointF> sizingTask = new AsyncTask<Void,Void,PointF>() {
 				@Override
 				protected PointF doInBackground(Void... arg0) {
 					return mCore.getPageSize(position);

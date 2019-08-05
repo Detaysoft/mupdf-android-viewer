@@ -13,6 +13,7 @@ import android.graphics.Rect;
 import android.net.Uri;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -114,6 +115,8 @@ public class ReaderView
 		if (tapPageMargin > dm.widthPixels/5)
 			tapPageMargin = dm.widthPixels/5;
 	}
+
+
 
 	public boolean popHistory() {
 		if (mHistory.empty())
@@ -247,6 +250,7 @@ public class ReaderView
 		if (mScaling)
 			return true;
 
+
 		View v = mChildViews.get(mCurrent);
 		if (v != null) {
 			Rect bounds = getScrollBounds(v);
@@ -255,7 +259,6 @@ public class ReaderView
 				if (HORIZONTAL_SCROLLING && bounds.left >= 0) {
 					// Fling off to the left bring next view onto screen
 					View vl = mChildViews.get(mCurrent+1);
-
 					if (vl != null) {
 						slideViewOntoScreen(vl);
 						return true;
@@ -266,7 +269,6 @@ public class ReaderView
 				if (!HORIZONTAL_SCROLLING && bounds.top >= 0) {
 					// Fling off to the top bring next view onto screen
 					View vl = mChildViews.get(mCurrent+1);
-
 					if (vl != null) {
 						slideViewOntoScreen(vl);
 						return true;
@@ -277,7 +279,6 @@ public class ReaderView
 				if (HORIZONTAL_SCROLLING && bounds.right <= 0) {
 					// Fling off to the right bring previous view onto screen
 					View vr = mChildViews.get(mCurrent-1);
-
 					if (vr != null) {
 						slideViewOntoScreen(vr);
 						return true;
@@ -464,6 +465,7 @@ public class ReaderView
 					move = cv.getTop() + cv.getMeasuredHeight() + cvOffset.y + GAP/2 + mYScroll < getHeight()/2;
 				if (move && mCurrent + 1 < mAdapter.getCount()) {
 					postUnsettle(cv);
+
 					// post to invoke test for end of animation
 					// where we must set hq area for the new current view
 					mStepper.prod();
@@ -482,7 +484,6 @@ public class ReaderView
 					// post to invoke test for end of animation
 					// where we must set hq area for the new current view
 					mStepper.prod();
-
 					onMoveOffChild(mCurrent);
 					mCurrent--;
 					onMoveToChild(mCurrent);
@@ -518,11 +519,9 @@ public class ReaderView
 				removeViewInLayout(v);
 			}
 			mChildViews.clear();
-
 			// post to ensure generation of hq area
 			mStepper.prod();
 		}
-
 		// Ensure current view is present
 		int cvLeft, cvRight, cvTop, cvBottom;
 		boolean notPresent = (mChildViews.get(mCurrent) == null);
@@ -567,6 +566,7 @@ public class ReaderView
 
 		cv.layout(cvLeft, cvTop, cvRight, cvBottom);
 
+
 		if (mCurrent > 0) {
 			View lv = getOrCreateChild(mCurrent - 1);
 			Point leftOffset = subScreenSizeOffset(lv);
@@ -604,9 +604,10 @@ public class ReaderView
 						cvBottom + gap + rv.getMeasuredHeight());
 			}
 		}
-
 		invalidate();
 	}
+
+
 
 	@Override
 	public Adapter getAdapter() {

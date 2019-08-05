@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer.gp.webviews;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +15,6 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
 import com.artifex.mupdf.viewer.gp.models.GPAnnotationInfo;
 import com.artifex.mupdf.viewer.PageView;
 import com.artifex.mupdf.viewer.ReaderView;
@@ -120,6 +120,7 @@ public class WebViewAnnotation extends WebView {
 
     public boolean isHorizontalScrolling, isDummyAction;
     private MotionEvent previousMotionEvent;
+    @SuppressLint("ClickableViewAccessibility")
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     public WebViewAnnotation(Context context, GPAnnotationInfo lie, CustomPulseProgress loading) {
         super(context);
@@ -155,7 +156,8 @@ public class WebViewAnnotation extends WebView {
         s.setAppCacheEnabled(true);
         s.setAllowFileAccessFromFileURLs(true);
         s.setAllowUniversalAccessFromFileURLs(true);
-        s.setSupportZoom(false);
+        s.setSupportZoom(true);
+
 
         this.setHorizontalScrollBarEnabled(false);
         this.setVerticalScrollBarEnabled(false);
@@ -225,11 +227,7 @@ public class WebViewAnnotation extends WebView {
                             }
                             return false;
                         }
-
                     }
-
-
-
                     return false;
                 }
             });
