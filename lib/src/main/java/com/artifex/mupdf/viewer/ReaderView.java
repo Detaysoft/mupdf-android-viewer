@@ -149,6 +149,16 @@ public class ReaderView
 	}
 
 	public void setDisplayedViewIndex(int i) {
+		boolean displayTwoPages = displayPages == DisplayPages.TWO;
+
+		boolean collapseTwoPages =  displayTwoPages &&
+				mCurrent != 0 && !(mCurrent == mAdapter.getCount() - 1 && mAdapter.getCount() % 2 == 0);
+
+		int currentIndex = (collapseTwoPages && mCurrent % 2 == 0 && mCurrent > 0) ? mCurrent - 1 : mCurrent;
+
+		if ((currentIndex == i || currentIndex+1 == i) && collapseTwoPages)
+			return;
+
 		if (0 <= i && i < mAdapter.getCount()) {
 			onMoveOffChild(mCurrent);
 			mCurrent = i;
@@ -470,6 +480,7 @@ public class ReaderView
 
 		boolean collapseTwoPages =  displayTwoPages &&
 				mCurrent != 0 && !(mCurrent == mAdapter.getCount() - 1 && mAdapter.getCount() % 2 == 0);
+
 		int currentIndex = (collapseTwoPages && mCurrent % 2 == 0 && mCurrent > 0) ? mCurrent - 1 : mCurrent;
 
 		View cv = mChildViews.get(currentIndex);
