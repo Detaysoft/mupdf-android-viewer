@@ -150,6 +150,9 @@ public class DocumentActivity extends Activity
 	protected View mReflowButton;
 	protected PopupMenu mLayoutPopupMenu;
 
+	// GP orientation
+	private int mOrientation;
+
 	private MuPDFCore openFile(String path)
 	{
 		int lastSlashPos = path.lastIndexOf('/');
@@ -200,6 +203,9 @@ public class DocumentActivity extends Activity
 
 		// Commented out for disabling full screen in GalePress
 		// getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+		// GP Orientation
+		mOrientation = getResources().getConfiguration().orientation;
 
 		DisplayMetrics metrics = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -427,7 +433,11 @@ public class DocumentActivity extends Activity
 			public void onConfigurationChanged(Configuration newConfig) {
 				super.onConfigurationChanged(newConfig);
 				// GalePress integration: manage layout of custom views on orientation change
-				relayoutCustomViews(mCurrent);
+				if (mOrientation != newConfig.orientation) {
+					relayoutCustomViews(mCurrent);
+					displayPages = newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE ? DisplayPages.TWO : DisplayPages.SINGLE;
+					mOrientation = newConfig.orientation;
+				}
 			}
 		};
 		mDocView.setAdapter(new PageAdapter(this, core));
@@ -732,6 +742,9 @@ public class DocumentActivity extends Activity
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
+
+		mOrientation = getResources().getConfiguration().orientation;
+
 		if (mFileName != null && mDocView != null) {
 			outState.putString("FileName", mFileName);
 			// Store current page in the prefs against the file name,
