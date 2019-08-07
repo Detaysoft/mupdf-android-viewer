@@ -16,6 +16,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -211,12 +212,42 @@ public class DocumentActivity extends Activity
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
 		mDisplayDPI = (int)metrics.densityDpi;
 
+		RelativeLayout layout = new RelativeLayout(this);
+		layout.setBackgroundColor(Color.WHITE);
+		setContentView(layout);
+
+		ProgressBar documentLoadingProgressBar = new ProgressBar(DocumentActivity.this, null, android.R.attr.progressBarStyle);
+
+		layout.addView(documentLoadingProgressBar);
+		
+		RelativeLayout.LayoutParams layoutParams =
+				(RelativeLayout.LayoutParams)documentLoadingProgressBar.getLayoutParams();
+		layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+		documentLoadingProgressBar.setLayoutParams(layoutParams);
+
 
 
 		mAlertBuilder = new AlertDialog.Builder(this);
 
+		AsyncTask createDocumentTask = new AsyncTask() {
+			@Override
+			protected Object doInBackground(Object[] objects) {
+				prepareDocument(savedInstanceState);
+				return null;
+			}
 
+			@Override
+			protected void onPostExecute(Object o) {
+				super.onPostExecute(o);
+				createUI(savedInstanceState);
+			}
+		};
 
+		createDocumentTask.execute();
+
+	}
+
+	private void prepareDocument(Bundle savedInstanceState) {
 		if (core == null) {
 			if (savedInstanceState != null && savedInstanceState.containsKey("FileName")) {
 				mFileName = savedInstanceState.getString("FileName");
@@ -338,7 +369,6 @@ public class DocumentActivity extends Activity
 			alert.show();
 			return;
 		}
-		createUI(savedInstanceState);
 	}
 
 	public void requestPassword(final Bundle savedInstanceState) {
