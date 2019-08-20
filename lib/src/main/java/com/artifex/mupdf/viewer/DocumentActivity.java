@@ -581,7 +581,12 @@ public class DocumentActivity extends Activity
 
 		// Reenstate last state if it was recorded
 		SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
-		mDocView.setDisplayedViewIndex(prefs.getInt("page"+ mFileName, 0));
+		if(content !=null){
+			mDocView.setDisplayedViewIndex(prefs.getInt("page" + getContentId(), 0));
+		}else{
+			mDocView.setDisplayedViewIndex(prefs.getInt("page" + mFileName, 0));
+		}
+
 
 		// GalePress don't show buttons in first open instead show a button to let user know there are buttons
 		 if (savedInstanceState == null || !savedInstanceState.getBoolean("ButtonsHidden", false))
@@ -802,8 +807,14 @@ public class DocumentActivity extends Activity
 		if (mFileName != null && mDocView != null) {
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
-			edit.putInt("page"+mFileName, mDocView.getDisplayedViewIndex());
-			edit.apply();
+			if(content !=null){
+				edit.putInt("page" + getContentId(), mDocView.getDisplayedViewIndex());
+				edit.apply();
+			}
+			else{
+				edit.putInt("page", mDocView.getDisplayedViewIndex());
+				edit.apply();
+			}
 		}
 	}
 
