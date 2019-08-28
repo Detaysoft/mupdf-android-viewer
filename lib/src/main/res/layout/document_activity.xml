@@ -189,20 +189,33 @@
 
 	</RelativeLayout>
 
+
 	<RelativeLayout
 		android:id="@+id/lowerButtons"
 		android:layout_width="match_parent"
 		android:layout_height="130dp"
 		android:layout_alignParentBottom="true"
-		android:layout_centerHorizontal="true"
-		>
+		android:layout_centerHorizontal="true">
 
 		<android.support.v7.widget.RecyclerView
             android:id="@+id/recyclerPagePreview"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
 			android:orientation="horizontal"
-			android:background="@android:color/black"/>
+			android:background="@android:color/black">
+        </android.support.v7.widget.RecyclerView>
+
+
+		<ProgressBar
+			android:id="@+id/ProgressRecycler"
+			android:layout_width="40dp"
+			android:layout_height="40dp"
+			android:layout_centerHorizontal="true"
+			android:layout_centerVertical="true"
+			android:visibility="invisible"
+			/>
+
+
 	</RelativeLayout>
 
 </RelativeLayout>

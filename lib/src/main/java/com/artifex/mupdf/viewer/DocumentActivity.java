@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -18,6 +19,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -72,6 +74,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Locale;
+
+
 
 public class DocumentActivity extends Activity
 {
@@ -130,11 +134,15 @@ public class DocumentActivity extends Activity
 
 	// GP reader show buttons button
 	private RelativeLayout mReaderShowPageThumbnailsButton;
+    private ProgressBar ProgressRecycler;
+
 
 	// GP recycler page preview
 	private RecyclerView mRecyclerPagePreview;
 	private RecyclerAdapter mRecyclerPagePreviewAdapter;
 	private LinearLayoutManager mRecylerPagePreviewLayoutManager;
+    private boolean isPagePreviewActive = false;
+    private AsyncTask  mPagePreviewAsyncTask;
 
 	private AlertDialog.Builder mAlertBuilder;
 	private boolean    mLinkHighlight = false;
@@ -195,6 +203,7 @@ public class DocumentActivity extends Activity
 	}
 
 	/** Called when the activity is first created. */
+	@SuppressLint("StaticFieldLeak")
 	@Override
 	public void onCreate(final Bundle savedInstanceState)
 	{
@@ -212,38 +221,14 @@ public class DocumentActivity extends Activity
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
 		mDisplayDPI = (int)metrics.densityDpi;
 
-		RelativeLayout layout = new RelativeLayout(this);
-		layout.setBackgroundColor(Color.WHITE);
-		setContentView(layout);
-
-		ProgressBar documentLoadingProgressBar = new ProgressBar(DocumentActivity.this, null, android.R.attr.progressBarStyle);
-
-		layout.addView(documentLoadingProgressBar);
-		
-		RelativeLayout.LayoutParams layoutParams =
-				(RelativeLayout.LayoutParams)documentLoadingProgressBar.getLayoutParams();
-		layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-		documentLoadingProgressBar.setLayoutParams(layoutParams);
-
-
-
 		mAlertBuilder = new AlertDialog.Builder(this);
 
-		AsyncTask createDocumentTask = new AsyncTask() {
-			@Override
-			protected Object doInBackground(Object[] objects) {
-				prepareDocument(savedInstanceState);
-				return null;
-			}
 
-			@Override
-			protected void onPostExecute(Object o) {
-				super.onPostExecute(o);
-				createUI(savedInstanceState);
-			}
-		};
 
-		createDocumentTask.execute();
+		prepareDocument(savedInstanceState);
+		createUI(savedInstanceState);
+
+		ProgressRecycler = findViewById(R.id.ProgressRecycler);
 
 	}
 
@@ -415,7 +400,8 @@ public class DocumentActivity extends Activity
 		scrollToThumbnailPagePreviewIndex(currentPageIndex);
 	}
 
-	public void createUI(Bundle savedInstanceState) {
+	@SuppressLint("StaticFieldLeak")
+    public void createUI(Bundle savedInstanceState) {
 		if (core == null)
 			return;
 
@@ -426,10 +412,10 @@ public class DocumentActivity extends Activity
 			protected void onMoveToChild(int i) {
 				if (core == null)
 					return;
-
-				mRecyclerPagePreviewAdapter.setSelectedIndex(i);
-				scrollToThumbnailPagePreviewIndex(i);
-
+                if(isPagePreviewActive){
+                    mRecyclerPagePreviewAdapter.setSelectedIndex(i);
+                    scrollToThumbnailPagePreviewIndex(i);
+                }
 				super.onMoveToChild(i);
 			}
 
@@ -506,18 +492,47 @@ public class DocumentActivity extends Activity
 	    mRecyclerPagePreview.setLayoutManager(mRecylerPagePreviewLayoutManager);
 		mRecyclerPagePreview.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
-		PagePreview[] ppArray = new PagePreview[core.countPages()];
 
-		// TODO: make width and height dynamic
-		Bitmap[] pageThumbnails = core.getPDFThumbnails(60, 90);
 
-		for (int i = 0; i < core.countPages(); i++) {
-			ppArray[i] = new PagePreview(i, pageThumbnails[i]);
-		}
 
-		mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, this);
 
-		mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
+        mPagePreviewAsyncTask = new AsyncTask() {
+            @Override
+            protected Object doInBackground(Object[] objects) {
+
+				final PagePreview[] ppArray = new PagePreview[core.countPages()];
+
+				// TODO: make width and height dynamic
+				final Bitmap[] pageThumbnails = core.getPDFThumbnails(60, 90);
+
+				for (int i = 0; i < core.countPages(); i++) {
+					ppArray[i] = new PagePreview(i, pageThumbnails[i]);
+				}
+				mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Object o) {
+                super.onPostExecute(o);
+				isPagePreviewActive = true;
+                mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
+                int displayingPageIndex = mDocView.getDisplayedViewIndex();
+                mRecyclerPagePreviewAdapter.setSelectedIndex(displayingPageIndex);
+                scrollToThumbnailPagePreviewIndex(displayingPageIndex);
+				ProgressRecycler.setVisibility(View.INVISIBLE);
+            }
+
+			@Override
+			protected void onPreExecute() {
+				super.onPreExecute();
+			}
+		};
+
+
+
+
+
 
 		//---------- GalePress recycle page preview [End]
 
@@ -637,8 +652,10 @@ public class DocumentActivity extends Activity
 					mDocView.setDisplayedViewIndex(resultPageIndex);
 
 					// refresh page preview bar
-					scrollToThumbnailPagePreviewIndex(resultPageIndex);
-					mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+                    if(isPagePreviewActive){
+                        scrollToThumbnailPagePreviewIndex(resultPageIndex);
+                        mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+                    }
 				}
 			});
 
@@ -866,8 +883,10 @@ public class DocumentActivity extends Activity
 	 * */
 	private void scrollToThumbnailPagePreviewIndex( int index) {
 		// TODO: offset parameter needs to be dynamic
-		mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
-	}
+        if(isPagePreviewActive)
+            mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
+    }
+
 
 	/*
 	 * display page of the given index and center it
@@ -890,8 +909,10 @@ public class DocumentActivity extends Activity
 			int index = mDocView.getDisplayedViewIndex();
 
 			// GP scroll to displaying page
-			scrollToThumbnailPagePreviewIndex(index);
-			mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+            if(isPagePreviewActive){
+                scrollToThumbnailPagePreviewIndex(index);
+                mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+            }
 
 			if (mTopBarMode == TopBarMode.Search) {
 				if (mSearchMode == SearchMode.Lib) {
@@ -911,7 +932,10 @@ public class DocumentActivity extends Activity
 
 				public void onAnimationRepeat(Animation animation) {}
 
-				public void onAnimationEnd(Animation animation) {}
+				public void onAnimationEnd(Animation animation) {
+					if(mPagePreviewAsyncTask.getStatus() != AsyncTask.Status.FINISHED)
+					      ProgressRecycler.setVisibility(View.VISIBLE);
+				}
 			});
 			mReaderShowPageThumbnailsButton.startAnimation(anim);
 
@@ -923,7 +947,8 @@ public class DocumentActivity extends Activity
 					mTopBarSwitcher.setVisibility(View.VISIBLE);
 				}
 				public void onAnimationRepeat(Animation animation) {}
-				public void onAnimationEnd(Animation animation) {}
+				public void onAnimationEnd(Animation animation) {
+				}
 			});
 			mTopBarSwitcher.startAnimation(anim);
 
@@ -938,7 +963,9 @@ public class DocumentActivity extends Activity
 
 				public void onAnimationRepeat(Animation animation) {}
 
-				public void onAnimationEnd(Animation animation) {}
+				public void onAnimationEnd(Animation animation) {
+
+				}
 			});
 			mRecyclerPagePreview.startAnimation(anim);
 		}
@@ -967,7 +994,10 @@ public class DocumentActivity extends Activity
 			anim.setDuration(250);
 			anim.setAnimationListener(new Animation.AnimationListener() {
 
-				public void onAnimationStart(Animation animation) {}
+				public void onAnimationStart(Animation animation) {
+					if(mPagePreviewAsyncTask.getStatus() != AsyncTask.Status.FINISHED)
+						ProgressRecycler.setVisibility(View.INVISIBLE);
+				}
 
 				public void onAnimationRepeat(Animation animation) {}
 
@@ -1048,13 +1078,22 @@ public class DocumentActivity extends Activity
 		mShareButton.setBackground(icon);
 
 		// GalePress reader show page thumbnails button
-		mReaderShowPageThumbnailsButton = (RelativeLayout)mButtonsView.findViewById(R.id.readerShowPageThumbnailsButton);
+		mReaderShowPageThumbnailsButton = mButtonsView.findViewById(R.id.readerShowPageThumbnailsButton);
+
+
+
+
 
 		mReaderShowPageThumbnailsButton.setVisibility(View.VISIBLE);
 		mReaderShowPageThumbnailsButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
+
+                if(!isPagePreviewActive && mPagePreviewAsyncTask.getStatus() == AsyncTask.Status.PENDING){
+					mPagePreviewAsyncTask.execute();
+				}
 				showButtons();
+
 			}
 		});
 
@@ -1213,13 +1252,13 @@ public class DocumentActivity extends Activity
 					@Override
 					public void onAnimationRepeat(Animation animation) {}
 				});
-				mReaderShowPageThumbnailsButton.startAnimation(s12);
+				 mReaderShowPageThumbnailsButton.startAnimation(s12);
 			}
 
 			@Override
 			public void onAnimationRepeat(Animation animation) {}
 		});
-		mReaderShowPageThumbnailsButton.startAnimation(s11);
+		    mReaderShowPageThumbnailsButton.startAnimation(s11);
 
 
 	}
@@ -1340,8 +1379,10 @@ public class DocumentActivity extends Activity
 					mDocView.setDisplayedViewIndex(resultPageIndex);
 
 					// refresh page preview bar
-					scrollToThumbnailPagePreviewIndex(resultPageIndex);
-					mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+                    if(isPagePreviewActive){
+                        scrollToThumbnailPagePreviewIndex(resultPageIndex);
+                        mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+                    }
 					searchModeOff();
 				}
 			}
@@ -1440,6 +1481,7 @@ public class DocumentActivity extends Activity
 	}
 
 	//---------- GalePress Integration - Search [End]
+
 
 
 	@Override

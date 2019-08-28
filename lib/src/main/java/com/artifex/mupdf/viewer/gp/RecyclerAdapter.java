@@ -16,6 +16,7 @@ import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 import com.artifex.mupdf.viewer.gp.util.ThemeFont;
 
+
 import static android.view.View.VISIBLE;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyViewHolder> {
@@ -102,6 +103,10 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
          holder.previewImage.setImageBitmap(mDataset[position].getImage());
          holder.relativeLayout.setTag(position);
     }
+
+
+
+
 
     private void viewVisibleAnimator(final View view) {
         view.animate()
