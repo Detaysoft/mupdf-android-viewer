@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+	<string name="open">Open</string>
+	<string name="close">Close</string>
 	<string name="cancel">Cancel</string>
 	<string name="cannot_open_document">Cannot open document</string>
 	<string name="cannot_open_document_Reason">Cannot open document: %1$s</string>
@@ -11,4 +13,17 @@
 	<string name="search">Search&#x2026;</string>
 	<string name="searching_">Searching&#x2026;</string>
 	<string name="text_not_found">Text not found</string>
+
+	<string name="title_activity_crop">Crop &amp; Share</string>
+
+	<string name="unexpected_error">Unexpected error occured</string>
+	<string name="cannot_open_crop">Cannot open share screen</string>
+
+	<string name="choose_an_app">Choose an app</string>
+
+	<string name="toggle_links">Highlight and enable links</string>
+	<string name="toggle_reflow_mode">Toggle reflow mode</string>
+	<string name="outline_title">Table of Contents</string>
+	<string name="more">More</string>
+
 </resources>

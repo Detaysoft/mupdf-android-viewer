@@ -24,6 +24,7 @@ import java.util.TimerTask;
 
 import com.artifex.mupdf.fitz.Document; /* for file name recognition */
 import com.artifex.mupdf.viewer.DocumentActivity;
+import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 
 public class LibraryActivity extends ListActivity
 {
@@ -63,7 +64,6 @@ public class LibraryActivity extends ListActivity
 
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
 		/* Hide 'home' icon on old themes */
 		getActionBar().setDisplayShowHomeEnabled(false);
 
@@ -170,6 +170,8 @@ public class LibraryActivity extends ListActivity
 		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET); /* launch as a new document */
 		intent.setAction(Intent.ACTION_VIEW);
 		intent.setData(Uri.fromFile(item.file));
+		intent.putExtra(DocumentActivity.EXTRA_THEME_TYPE, ThemeColor.DARK_THEME_TYPE);
+		intent.putExtra(DocumentActivity.EXTRA_FOREGROUND_THEME_COLOR, "#fc4a6a");
 		startActivity(intent);
 	}
 }

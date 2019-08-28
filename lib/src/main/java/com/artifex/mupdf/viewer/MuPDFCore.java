@@ -11,11 +11,9 @@ import com.artifex.mupdf.fitz.Quad;
 import com.artifex.mupdf.fitz.Rect;
 import com.artifex.mupdf.fitz.RectI;
 import com.artifex.mupdf.fitz.android.AndroidDrawDevice;
-
-import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.graphics.PointF;
-
 import java.util.ArrayList;
 
 public class MuPDFCore
@@ -29,6 +27,7 @@ public class MuPDFCore
 	private float pageWidth;
 	private float pageHeight;
 	private DisplayList displayList;
+
 
 	/* Default to "A Format" pocket book size. */
 	private int layoutW = 312;
@@ -50,6 +49,7 @@ public class MuPDFCore
 		resolution = 160;
 		currentPage = -1;
 	}
+
 
 	public String getTitle() {
 		return doc.getMetaData(Document.META_INFO_TITLE);
@@ -85,24 +85,24 @@ public class MuPDFCore
 	}
 
 	private synchronized void gotoPage(int pageNum) {
-		/* TODO: page cache */
-		if (pageNum > pageCount-1)
-			pageNum = pageCount-1;
-		else if (pageNum < 0)
-			pageNum = 0;
-		if (pageNum != currentPage) {
-			currentPage = pageNum;
-			if (page != null)
-				page.destroy();
-			page = null;
-			if (displayList != null)
-				displayList.destroy();
-			displayList = null;
-			page = doc.loadPage(pageNum);
-			Rect b = page.getBounds();
-			pageWidth = b.x1 - b.x0;
-			pageHeight = b.y1 - b.y0;
-		}
+			/* TODO: page cache */
+			if (pageNum > pageCount-1)
+				pageNum = pageCount-1;
+			else if (pageNum < 0)
+				pageNum = 0;
+			if (pageNum != currentPage) {
+				currentPage = pageNum;
+				if (page != null)
+					page.destroy();
+				page = null;
+				if (displayList != null)
+					displayList.destroy();
+				displayList = null;
+				page = doc.loadPage(pageNum);
+				Rect b = page.getBounds();
+				pageWidth = b.x1 - b.x0;
+				pageHeight = b.y1 - b.y0;
+			}
 	}
 
 	public synchronized PointF getPageSize(int pageNum) {
@@ -127,23 +127,28 @@ public class MuPDFCore
 			int patchX, int patchY,
 			int patchW, int patchH,
 			Cookie cookie) {
-		gotoPage(pageNum);
+			gotoPage(pageNum);
 
-		if (displayList == null)
-			displayList = page.toDisplayList(false);
+			if (displayList == null)
+				displayList = page.toDisplayList(false);
 
-		float zoom = resolution / 72;
-		Matrix ctm = new Matrix(zoom, zoom);
-		RectI bbox = new RectI(page.getBounds().transform(ctm));
-		float xscale = (float)pageW / (float)(bbox.x1-bbox.x0);
-		float yscale = (float)pageH / (float)(bbox.y1-bbox.y0);
-		ctm.scale(xscale, yscale);
 
-		AndroidDrawDevice dev = new AndroidDrawDevice(bm, patchX, patchY);
-		displayList.run(dev, ctm, cookie);
-		dev.close();
-		dev.destroy();
-	}
+				float zoom = resolution / 72;
+				Matrix ctm = new Matrix(zoom, zoom);
+				RectI bbox = new RectI(page.getBounds().transform(ctm));
+				float xscale = (float)pageW / (float)(bbox.x1-bbox.x0);
+				float yscale = (float)pageH / (float)(bbox.y1-bbox.y0);
+				ctm.scale(xscale, yscale);
+
+				AndroidDrawDevice dev = new AndroidDrawDevice(bm, patchX, patchY);
+				displayList.run(dev, ctm, cookie);
+				dev.close();
+				dev.destroy();
+			}
+
+
+
+
 
 	public synchronized void updatePage(Bitmap bm, int pageNum,
 			int pageW, int pageH,
@@ -183,7 +188,7 @@ public class MuPDFCore
 		}
 	}
 
-	public synchronized ArrayList<OutlineActivity.Item> getOutline() {
+	public  synchronized ArrayList<OutlineActivity.Item> getOutline() {
 		ArrayList<OutlineActivity.Item> result = new ArrayList<OutlineActivity.Item>();
 		flattenOutlineNodes(result, outline, "");
 		return result;
@@ -195,5 +200,27 @@ public class MuPDFCore
 
 	public synchronized boolean authenticatePassword(String password) {
 		return doc.authenticatePassword(password);
+	}
+
+	/*
+	 * returns pdf page thumbnail bitmaps
+	 */
+
+	public Bitmap[] getPDFThumbnails(int w, int h){
+
+		int pageCount = countPages();
+		Bitmap[] thumbnails = new Bitmap[pageCount];
+
+		for (int i = 0; i < pageCount; i++) {
+			PointF pageSize = getPageSize(i);
+			float mSourceScale = Math.max(w/pageSize.x, h/pageSize.y);
+
+			Point size = new Point((int)(pageSize.x*mSourceScale), (int)(pageSize.y*mSourceScale));
+			final Bitmap bp = Bitmap.createBitmap(size.x,size.y, Bitmap.Config.ARGB_8888);
+
+			drawPage(bp,i,size.x, size.y, 0, 0, size.x, size.y,new Cookie());
+			thumbnails[i] = bp;
+		}
+		return thumbnails;
 	}
 }

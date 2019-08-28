@@ -1,13 +1,12 @@
 package com.artifex.mupdf.viewer;
 
 import com.artifex.mupdf.fitz.Link;
-
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Stack;
-
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.net.Uri;
@@ -26,6 +25,17 @@ import android.widget.Scroller;
 public class ReaderView
 		extends AdapterView<Adapter>
 		implements GestureDetector.OnGestureListener, ScaleGestureDetector.OnScaleGestureListener, Runnable {
+
+	/*
+	*  GalePress page display modes
+	*  TWO: display two pages
+	*  SINGLE: display one page
+	* */
+	enum DisplayPages {
+		SINGLE,
+		TWO
+	}
+
 	private Context mContext;
 	private boolean mLinksEnabled = false;
 	private boolean tapDisabled = false;
@@ -44,6 +54,8 @@ public class ReaderView
 	private static final float MAX_SCALE        = 64.0f;
 
 	private static final boolean HORIZONTAL_SCROLLING = true;
+
+	protected DisplayPages displayPages = DisplayPages.SINGLE; // GP Display Pages
 
 	private PageAdapter           mAdapter;
 	protected int               mCurrent;    // Adapter's index for the current view
@@ -98,6 +110,10 @@ public class ReaderView
 		mStepper = new Stepper(this, this);
 		mHistory = new Stack<Integer>();
 
+		// GalePress display two pages
+		displayPages = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ?
+				DisplayPages.TWO : DisplayPages.SINGLE;
+
 		// Get the screen size etc to customise tap margins.
 		// We calculate the size of 1 inch of the screen for tapping.
 		// On some devices the dpi values returned are wrong, so we
@@ -115,6 +131,8 @@ public class ReaderView
 			tapPageMargin = dm.widthPixels/5;
 	}
 
+
+
 	public boolean popHistory() {
 		if (mHistory.empty())
 			return false;
@@ -131,6 +149,16 @@ public class ReaderView
 	}
 
 	public void setDisplayedViewIndex(int i) {
+		boolean displayTwoPages = displayPages == DisplayPages.TWO;
+
+		boolean collapseTwoPages =  displayTwoPages &&
+				mCurrent != 0 && !(mCurrent == mAdapter.getCount() - 1 && mAdapter.getCount() % 2 == 0);
+
+		int currentIndex = (collapseTwoPages && mCurrent % 2 == 0 && mCurrent > 0) ? mCurrent - 1 : mCurrent;
+
+		if ((currentIndex == i || currentIndex+1 == i) && collapseTwoPages)
+			return;
+
 		if (0 <= i && i < mAdapter.getCount()) {
 			onMoveOffChild(mCurrent);
 			mCurrent = i;
@@ -175,151 +203,6 @@ public class ReaderView
 		if (advance > max)
 			advance = max;
 		return advance;
-	}
-
-	public void smartMoveForwards() {
-		View v = mChildViews.get(mCurrent);
-		if (v == null)
-			return;
-
-		// The following code works in terms of where the screen is on the views;
-		// so for example, if the currentView is at (-100,-100), the visible
-		// region would be at (100,100). If the previous page was (2000, 3000) in
-		// size, the visible region of the previous page might be (2100 + GAP, 100)
-		// (i.e. off the previous page). This is different to the way the rest of
-		// the code in this file is written, but it's easier for me to think about.
-		// At some point we may refactor this to fit better with the rest of the
-		// code.
-
-		// screenWidth/Height are the actual width/height of the screen. e.g. 480/800
-		int screenWidth = getWidth();
-		int screenHeight = getHeight();
-		// We might be mid scroll; we want to calculate where we scroll to based on
-		// where this scroll would end, not where we are now (to allow for people
-		// bashing 'forwards' very fast.
-		int remainingX = mScroller.getFinalX() - mScroller.getCurrX();
-		int remainingY = mScroller.getFinalY() - mScroller.getCurrY();
-		// right/bottom is in terms of pixels within the scaled document; e.g. 1000
-		int top = -(v.getTop() + mYScroll + remainingY);
-		int right = screenWidth -(v.getLeft() + mXScroll + remainingX);
-		int bottom = screenHeight+top;
-		// docWidth/Height are the width/height of the scaled document e.g. 2000x3000
-		int docWidth = v.getMeasuredWidth();
-		int docHeight = v.getMeasuredHeight();
-
-		int xOffset, yOffset;
-		if (bottom >= docHeight) {
-			// We are flush with the bottom. Advance to next column.
-			if (right + screenWidth > docWidth) {
-				// No room for another column - go to next page
-				View nv = mChildViews.get(mCurrent+1);
-				if (nv == null) // No page to advance to
-					return;
-				int nextTop = -(nv.getTop() + mYScroll + remainingY);
-				int nextLeft = -(nv.getLeft() + mXScroll + remainingX);
-				int nextDocWidth = nv.getMeasuredWidth();
-				int nextDocHeight = nv.getMeasuredHeight();
-
-				// Allow for the next page maybe being shorter than the screen is high
-				yOffset = (nextDocHeight < screenHeight ? ((nextDocHeight - screenHeight)>>1) : 0);
-
-				if (nextDocWidth < screenWidth) {
-					// Next page is too narrow to fill the screen. Scroll to the top, centred.
-					xOffset = (nextDocWidth - screenWidth)>>1;
-				} else {
-					// Reset X back to the left hand column
-					xOffset = right % screenWidth;
-					// Adjust in case the previous page is less wide
-					if (xOffset + screenWidth > nextDocWidth)
-						xOffset = nextDocWidth - screenWidth;
-				}
-				xOffset -= nextLeft;
-				yOffset -= nextTop;
-			} else {
-				// Move to top of next column
-				xOffset = screenWidth;
-				yOffset = screenHeight - bottom;
-			}
-		} else {
-			// Advance by 90% of the screen height downwards (in case lines are partially cut off)
-			xOffset = 0;
-			yOffset = smartAdvanceAmount(screenHeight, docHeight - bottom);
-		}
-		mScrollerLastX = mScrollerLastY = 0;
-		mScroller.startScroll(0, 0, remainingX - xOffset, remainingY - yOffset, 400);
-		mStepper.prod();
-	}
-
-	public void smartMoveBackwards() {
-		View v = mChildViews.get(mCurrent);
-		if (v == null)
-			return;
-
-		// The following code works in terms of where the screen is on the views;
-		// so for example, if the currentView is at (-100,-100), the visible
-		// region would be at (100,100). If the previous page was (2000, 3000) in
-		// size, the visible region of the previous page might be (2100 + GAP, 100)
-		// (i.e. off the previous page). This is different to the way the rest of
-		// the code in this file is written, but it's easier for me to think about.
-		// At some point we may refactor this to fit better with the rest of the
-		// code.
-
-		// screenWidth/Height are the actual width/height of the screen. e.g. 480/800
-		int screenWidth = getWidth();
-		int screenHeight = getHeight();
-		// We might be mid scroll; we want to calculate where we scroll to based on
-		// where this scroll would end, not where we are now (to allow for people
-		// bashing 'forwards' very fast.
-		int remainingX = mScroller.getFinalX() - mScroller.getCurrX();
-		int remainingY = mScroller.getFinalY() - mScroller.getCurrY();
-		// left/top is in terms of pixels within the scaled document; e.g. 1000
-		int left = -(v.getLeft() + mXScroll + remainingX);
-		int top = -(v.getTop() + mYScroll + remainingY);
-		// docWidth/Height are the width/height of the scaled document e.g. 2000x3000
-		int docHeight = v.getMeasuredHeight();
-
-		int xOffset, yOffset;
-		if (top <= 0) {
-			// We are flush with the top. Step back to previous column.
-			if (left < screenWidth) {
-				/* No room for previous column - go to previous page */
-				View pv = mChildViews.get(mCurrent-1);
-				if (pv == null) /* No page to advance to */
-					return;
-				int prevDocWidth = pv.getMeasuredWidth();
-				int prevDocHeight = pv.getMeasuredHeight();
-
-				// Allow for the next page maybe being shorter than the screen is high
-				yOffset = (prevDocHeight < screenHeight ? ((prevDocHeight - screenHeight)>>1) : 0);
-
-				int prevLeft = -(pv.getLeft() + mXScroll);
-				int prevTop = -(pv.getTop() + mYScroll);
-				if (prevDocWidth < screenWidth) {
-					// Previous page is too narrow to fill the screen. Scroll to the bottom, centred.
-					xOffset = (prevDocWidth - screenWidth)>>1;
-				} else {
-					// Reset X back to the right hand column
-					xOffset = (left > 0 ? left % screenWidth : 0);
-					if (xOffset + screenWidth > prevDocWidth)
-						xOffset = prevDocWidth - screenWidth;
-					while (xOffset + screenWidth*2 < prevDocWidth)
-						xOffset += screenWidth;
-				}
-				xOffset -= prevLeft;
-				yOffset -= prevTop-prevDocHeight+screenHeight;
-			} else {
-				// Move to bottom of previous column
-				xOffset = -screenWidth;
-				yOffset = docHeight - screenHeight + top;
-			}
-		} else {
-			// Retreat by 90% of the screen height downwards (in case lines are partially cut off)
-			xOffset = 0;
-			yOffset = -smartAdvanceAmount(screenHeight, top);
-		}
-		mScrollerLastX = mScrollerLastY = 0;
-		mScroller.startScroll(0, 0, remainingX - xOffset, remainingY - yOffset, 400);
-		mStepper.prod();
 	}
 
 	public void resetupChildren() {
@@ -392,6 +275,7 @@ public class ReaderView
 		if (mScaling)
 			return true;
 
+
 		View v = mChildViews.get(mCurrent);
 		if (v != null) {
 			Rect bounds = getScrollBounds(v);
@@ -400,7 +284,6 @@ public class ReaderView
 				if (HORIZONTAL_SCROLLING && bounds.left >= 0) {
 					// Fling off to the left bring next view onto screen
 					View vl = mChildViews.get(mCurrent+1);
-
 					if (vl != null) {
 						slideViewOntoScreen(vl);
 						return true;
@@ -411,7 +294,6 @@ public class ReaderView
 				if (!HORIZONTAL_SCROLLING && bounds.top >= 0) {
 					// Fling off to the top bring next view onto screen
 					View vl = mChildViews.get(mCurrent+1);
-
 					if (vl != null) {
 						slideViewOntoScreen(vl);
 						return true;
@@ -422,7 +304,6 @@ public class ReaderView
 				if (HORIZONTAL_SCROLLING && bounds.right <= 0) {
 					// Fling off to the right bring previous view onto screen
 					View vr = mChildViews.get(mCurrent-1);
-
 					if (vr != null) {
 						slideViewOntoScreen(vr);
 						return true;
@@ -593,33 +474,62 @@ public class ReaderView
 		if (isInEditMode())
 			return;
 
-		View cv = mChildViews.get(mCurrent);
+		boolean displayTwoPages = displayPages == DisplayPages.TWO;
+
+		boolean collapseTwoPages =  displayTwoPages &&
+				mCurrent != 0 && !(mCurrent == mAdapter.getCount() - 1 && mAdapter.getCount() % 2 == 0);
+
+		int currentIndex = (collapseTwoPages && mCurrent % 2 == 0 && mCurrent > 0) ? mCurrent - 1 : mCurrent;
+
+		View cv = mChildViews.get(currentIndex);
 		Point cvOffset;
+
+		// get right view
+		View rv = null;
+		Point rvOffset = null;
+
+		if (currentIndex + 1 < mAdapter.getCount()) {
+			rv = mChildViews.get(currentIndex + 1);
+		}
 
 		if (!mResetLayout) {
 			// Move to next or previous if current is sufficiently off center
 			if (cv != null) {
 				boolean move;
 				cvOffset = subScreenSizeOffset(cv);
+				Point viewOffset = null;
+
+				if (rv != null && collapseTwoPages) {
+					rvOffset = subScreenSizeOffset(rv);
+					viewOffset = new Point((cvOffset.x + rvOffset.x)/4, (cvOffset.y + rvOffset.y)/2);
+				}
+				else {
+					viewOffset = cvOffset;
+				}
 				// cv.getRight() may be out of date with the current scale
 				// so add left to the measured width for the correct position
 				if (HORIZONTAL_SCROLLING)
-					move = cv.getLeft() + cv.getMeasuredWidth() + cvOffset.x + GAP/2 + mXScroll < getWidth()/2;
+					// move = cv.getLeft() + cv.getMeasuredWidth() + cvOffset.x + GAP/2 + mXScroll < getWidth()/2;
+					move = cv.getLeft() + ((collapseTwoPages && rv != null) ? cv.getMeasuredWidth() + rv.getMeasuredWidth() : cv.getMeasuredWidth()) + viewOffset.x + GAP/2 + mXScroll < getWidth()/2;
 				else
 					move = cv.getTop() + cv.getMeasuredHeight() + cvOffset.y + GAP/2 + mYScroll < getHeight()/2;
 				if (move && mCurrent + 1 < mAdapter.getCount()) {
 					postUnsettle(cv);
+
 					// post to invoke test for end of animation
 					// where we must set hq area for the new current view
 					mStepper.prod();
 
 					onMoveOffChild(mCurrent);
-					mCurrent++;
+					mCurrent = ++currentIndex;
+					if (displayTwoPages && mCurrent < mAdapter.getCount() - 1) {
+						mCurrent++;
+					}
 					onMoveToChild(mCurrent);
 				}
 
 				if (HORIZONTAL_SCROLLING)
-					move = cv.getLeft() - cvOffset.x - GAP/2 + mXScroll >= getWidth()/2;
+					move = cv.getLeft() - viewOffset.x - GAP/2 + mXScroll >= getWidth()/2;
 				else
 					move = cv.getTop() - cvOffset.y - GAP/2 + mYScroll >= getHeight()/2;
 				if (move && mCurrent > 0) {
@@ -627,9 +537,11 @@ public class ReaderView
 					// post to invoke test for end of animation
 					// where we must set hq area for the new current view
 					mStepper.prod();
-
 					onMoveOffChild(mCurrent);
-					mCurrent--;
+					mCurrent = --currentIndex;
+					if (displayTwoPages && mCurrent > 0) {
+						mCurrent--;
+					}
 					onMoveToChild(mCurrent);
 				}
 			}
@@ -640,9 +552,11 @@ public class ReaderView
 			for (int i = 0; i < numChildren; i++)
 				childIndices[i] = mChildViews.keyAt(i);
 
+			int cacheIndex = displayTwoPages ? currentIndex : currentIndex - 1;
+
 			for (int i = 0; i < numChildren; i++) {
 				int ai = childIndices[i];
-				if (ai < mCurrent - 1 || ai > mCurrent + 1) {
+				if (ai < cacheIndex || ai > mCurrent + 1) {
 					View v = mChildViews.get(ai);
 					onNotInUse(v);
 					mViewCache.add(v);
@@ -663,22 +577,34 @@ public class ReaderView
 				removeViewInLayout(v);
 			}
 			mChildViews.clear();
-
 			// post to ensure generation of hq area
 			mStepper.prod();
 		}
-
 		// Ensure current view is present
 		int cvLeft, cvRight, cvTop, cvBottom;
-		boolean notPresent = (mChildViews.get(mCurrent) == null);
-		cv = getOrCreateChild(mCurrent);
+		boolean notPresent = (mChildViews.get(currentIndex) == null);
+		cv = getOrCreateChild(currentIndex);
+
+		if (currentIndex + 1 < mAdapter.getCount()) {
+			rv = getOrCreateChild(currentIndex + 1);
+			rvOffset = subScreenSizeOffset(rv);
+		}
+
 		// When the view is sub-screen-size in either dimension we
 		// offset it to center within the screen area, and to keep
 		// the views spaced out
 		cvOffset = subScreenSizeOffset(cv);
+
+		Point viewOffset = null;
+
+		if (collapseTwoPages)
+			viewOffset = new Point((cvOffset.x + rvOffset.x) / 4, (cvOffset.y + rvOffset.y) / 2);
+		else
+			viewOffset = cvOffset;
+
 		if (notPresent) {
 			// Main item not already present. Just place it top left
-			cvLeft = cvOffset.x;
+			cvLeft = viewOffset.x;
 			cvTop = cvOffset.y;
 		} else {
 			// Main item already present. Adjust by scroll offsets
@@ -690,8 +616,14 @@ public class ReaderView
 		cvRight = cvLeft + cv.getMeasuredWidth();
 		cvBottom = cvTop + cv.getMeasuredHeight();
 
+		int viewRight = cvRight;
+
+		if (collapseTwoPages) {
+			viewRight = cvRight + rv.getMeasuredWidth();
+		}
+
 		if (!mUserInteracting && mScroller.isFinished()) {
-			Point corr = getCorrection(getScrollBounds(cvLeft, cvTop, cvRight, cvBottom));
+			Point corr = getCorrection(getScrollBounds(cvLeft, cvTop, viewRight, cvBottom));
 			cvRight += corr.x;
 			cvLeft += corr.x;
 			cvTop += corr.y;
@@ -699,21 +631,22 @@ public class ReaderView
 		} else if (HORIZONTAL_SCROLLING && cv.getMeasuredHeight() <= getHeight()) {
 			// When the current view is as small as the screen in height, clamp
 			// it vertically
-			Point corr = getCorrection(getScrollBounds(cvLeft, cvTop, cvRight, cvBottom));
+			Point corr = getCorrection(getScrollBounds(cvLeft, cvTop, viewRight, cvBottom));
 			cvTop += corr.y;
 			cvBottom += corr.y;
 		} else if (!HORIZONTAL_SCROLLING && cv.getMeasuredWidth() <= getWidth()) {
 			// When the current view is as small as the screen in width, clamp
 			// it horizontally
-			Point corr = getCorrection(getScrollBounds(cvLeft, cvTop, cvRight, cvBottom));
+			Point corr = getCorrection(getScrollBounds(cvLeft, cvTop, viewRight, cvBottom));
 			cvRight += corr.x;
 			cvLeft += corr.x;
 		}
 
 		cv.layout(cvLeft, cvTop, cvRight, cvBottom);
 
-		if (mCurrent > 0) {
-			View lv = getOrCreateChild(mCurrent - 1);
+		if (!displayTwoPages && currentIndex > 0) {
+			View lv = getOrCreateChild(currentIndex - 1);
+
 			Point leftOffset = subScreenSizeOffset(lv);
 			if (HORIZONTAL_SCROLLING)
 			{
@@ -731,12 +664,14 @@ public class ReaderView
 			}
 		}
 
-		if (mCurrent + 1 < mAdapter.getCount()) {
-			View rv = getOrCreateChild(mCurrent + 1);
+		if (currentIndex + 1 < mAdapter.getCount()) {
 			Point rightOffset = subScreenSizeOffset(rv);
 			if (HORIZONTAL_SCROLLING)
 			{
 				int gap = cvOffset.x + GAP + rightOffset.x;
+				if (collapseTwoPages) {
+					gap = 0;
+				}
 				rv.layout(cvRight + gap,
 						(cvBottom + cvTop - rv.getMeasuredHeight())/2,
 						cvRight + rv.getMeasuredWidth() + gap,
@@ -749,9 +684,10 @@ public class ReaderView
 						cvBottom + gap + rv.getMeasuredHeight());
 			}
 		}
-
 		invalidate();
 	}
+
+
 
 	@Override
 	public Adapter getAdapter() {
@@ -866,10 +802,14 @@ public class ReaderView
 	}
 
 	private void slideViewOntoScreen(View v) {
+		if (displayPages == DisplayPages.TWO &&
+				mCurrent != 0 && !(mCurrent == mAdapter.getCount() - 1 && mAdapter.getCount() % 2 == 0))
+			return;
+
 		Point corr = getCorrection(getScrollBounds(v));
 		if (corr.x != 0 || corr.y != 0) {
 			mScrollerLastX = mScrollerLastY = 0;
-			mScroller.startScroll(0, 0, corr.x, corr.y, 400);
+			mScroller.startScroll(0, 0, corr.x, corr.y,0);
 			mStepper.prod();
 		}
 	}
@@ -921,14 +861,6 @@ public class ReaderView
 					pushHistory();
 					setDisplayedViewIndex(link.page);
 				}
-			} else if (e.getX() < tapPageMargin) {
-				smartMoveBackwards();
-			} else if (e.getX() > super.getWidth() - tapPageMargin) {
-				smartMoveForwards();
-			} else if (e.getY() < tapPageMargin) {
-				smartMoveBackwards();
-			} else if (e.getY() > super.getHeight() - tapPageMargin) {
-				smartMoveForwards();
 			} else {
 				onTapMainDocArea();
 			}

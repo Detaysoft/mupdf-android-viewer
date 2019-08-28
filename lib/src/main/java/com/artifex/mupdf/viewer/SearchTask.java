@@ -2,6 +2,7 @@ package com.artifex.mupdf.viewer;
 
 import com.artifex.mupdf.fitz.Quad;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -51,6 +52,7 @@ public abstract class SearchTask {
 		}
 	}
 
+	@SuppressLint("StaticFieldLeak")
 	public void go(final String text, int direction, int displayPage, int searchPage) {
 		if (mCore == null)
 			return;
