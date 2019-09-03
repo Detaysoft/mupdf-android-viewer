@@ -206,7 +206,7 @@ public class MuPDFCore
 	 * returns pdf page thumbnail bitmaps
 	 */
 
-	public Bitmap[] getPDFThumbnails(int w, int h){
+	public    Bitmap[] getPDFThumbnails(int w, int h){
 
 		int pageCount = countPages();
 		Bitmap[] thumbnails = new Bitmap[pageCount];
