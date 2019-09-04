@@ -81,8 +81,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
 
                 mDocumentActivity.jumpToPageAtIndex(position);
                 lastSelectedViewHolder.pageNumber.setVisibility(View.GONE);
-                viewVisibleAnimator(holder.pageNumber);
-                //holder.pageNumber.setVisibility(VISIBLE);
+                //viewVisibleAnimator(holder.pageNumber);
+                holder.pageNumber.setVisibility(VISIBLE);
                 lastSelectedViewHolder = holder;
                 selectedIndex = position;
             }
@@ -93,8 +93,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
         holder.pageNumber.setTypeface(ThemeFont.getInstance().getMediumItalicFont(mDocumentActivity.getApplicationContext()));
 
         if (position == selectedIndex) {
-        //  holder.pageNumber.setVisibility(VISIBLE);
-            viewVisibleAnimator(holder.pageNumber);
+            holder.pageNumber.setVisibility(VISIBLE);
+            //viewVisibleAnimator(holder.pageNumber);
             lastSelectedViewHolder = holder;
         }
         else
@@ -104,10 +104,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
          holder.relativeLayout.setTag(position);
     }
 
-
-
-
-
+    //animasyon iki kere tıklanma sorununa sebep olduğu için kaldırıldı.
     private void viewVisibleAnimator(final View view) {
         view.animate()
                 .alpha(1f)
@@ -119,7 +116,6 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
                     }
                 });
     }
-
     @Override
     public int getItemViewType(int position) {
         return position;

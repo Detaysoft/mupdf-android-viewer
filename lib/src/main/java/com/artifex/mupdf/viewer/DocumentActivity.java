@@ -1413,7 +1413,6 @@ public class DocumentActivity extends Activity
 				Toast.makeText(DocumentActivity.this, getResources().getString(R.string.text_not_found), Toast.LENGTH_SHORT).show();
 			}
 		}
-
 	}
 
 	public class SearchResultAdapter extends BaseAdapter {
