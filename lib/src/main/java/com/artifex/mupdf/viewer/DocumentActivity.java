@@ -1279,9 +1279,7 @@ public class DocumentActivity extends Activity
 		mSearchPopup.setOnDismissListener(new PopupWindow.OnDismissListener() {
 			@Override
 			public void onDismiss() {
-				if (mReaderSearchWord != null && mReaderSearchWord.length() == 0) {
-					searchModeOff();
-				}
+				searchModeOff();
 			}
 		});
 		mSearchPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
