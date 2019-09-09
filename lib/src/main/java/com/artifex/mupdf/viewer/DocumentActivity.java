@@ -245,12 +245,8 @@ public class DocumentActivity extends Activity
 
 			for (int i = 0; i < core.countPages(); i++) {
 				ppArray[i] = new PagePreview(i, pageThumbnails[i]);
-
-				for(int j=0; j< core.countPages();j++){
-					mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
-				}
-
 			}
+			mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
 			return null;
 		}
 
