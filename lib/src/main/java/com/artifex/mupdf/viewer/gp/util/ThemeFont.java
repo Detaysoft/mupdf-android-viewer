@@ -34,25 +34,9 @@ public class ThemeFont {
         }
     }
 
-    public Typeface getMediumFont(Context context) {
-        try {
-            return Typeface.createFromAsset(context.getAssets(), "fonts/Barlow-Medium.ttf");
-        } catch (Exception e) {
-            return Typeface.DEFAULT;
-        }
-    }
-
     public Typeface getItalicFont(Context context) {
         try {
             return Typeface.createFromAsset(context.getAssets(), "fonts/Barlow-Italic.ttf");
-        } catch (Exception e) {
-            return Typeface.DEFAULT;
-        }
-    }
-
-    public Typeface getLightItalicFont(Context context) {
-        try {
-            return Typeface.createFromAsset(context.getAssets(), "fonts/Barlow-LightItalic.ttf");
         } catch (Exception e) {
             return Typeface.DEFAULT;
         }

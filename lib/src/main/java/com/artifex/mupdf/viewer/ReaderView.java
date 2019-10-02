@@ -39,7 +39,6 @@ public class ReaderView
 	private Context mContext;
 	private boolean mLinksEnabled = false;
 	private boolean tapDisabled = false;
-	private int tapPageMargin;
 
 	private static final int MOVING_DIAGONALLY = 0;
 	private static final int MOVING_LEFT       = 1;
@@ -124,20 +123,7 @@ public class ReaderView
 		DisplayMetrics dm = new DisplayMetrics();
 		WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
 		wm.getDefaultDisplay().getMetrics(dm);
-		tapPageMargin = (int)dm.xdpi;
-		if (tapPageMargin < 100)
-			tapPageMargin = 100;
-		if (tapPageMargin > dm.widthPixels/5)
-			tapPageMargin = dm.widthPixels/5;
-	}
 
-
-
-	public boolean popHistory() {
-		if (mHistory.empty())
-			return false;
-		setDisplayedViewIndex(mHistory.pop());
-		return true;
 	}
 
 	public void pushHistory() {
@@ -168,43 +154,6 @@ public class ReaderView
 		}
 	}
 
-	public void moveToNext() {
-		View v = mChildViews.get(mCurrent+1);
-		if (v != null)
-			slideViewOntoScreen(v);
-	}
-
-	public void moveToPrevious() {
-		View v = mChildViews.get(mCurrent-1);
-		if (v != null)
-			slideViewOntoScreen(v);
-	}
-
-	// When advancing down the page, we want to advance by about
-	// 90% of a screenful. But we'd be happy to advance by between
-	// 80% and 95% if it means we hit the bottom in a whole number
-	// of steps.
-	private int smartAdvanceAmount(int screenHeight, int max) {
-		int advance = (int)(screenHeight * 0.9 + 0.5);
-		int leftOver = max % advance;
-		int steps = max / advance;
-		if (leftOver == 0) {
-			// We'll make it exactly. No adjustment
-		} else if ((float)leftOver / steps <= screenHeight * 0.05) {
-			// We can adjust up by less than 5% to make it exact.
-			advance += (int)((float)leftOver/steps + 0.5);
-		} else {
-			int overshoot = advance - leftOver;
-			if ((float)overshoot / steps <= screenHeight * 0.1) {
-				// We can adjust down by less than 10% to make it exact.
-				advance -= (int)((float)overshoot/steps + 0.5);
-			}
-		}
-		if (advance > max)
-			advance = max;
-		return advance;
-	}
-
 	public void resetupChildren() {
 		for (int i = 0; i < mChildViews.size(); i++)
 			onChildSetup(mChildViews.keyAt(i), mChildViews.valueAt(i));
@@ -224,7 +173,6 @@ public class ReaderView
 		/* All page views need recreating since both page and screen has changed size,
 		 * invalidating both sizes and bitmaps. */
 		mAdapter.refresh();
-		int numChildren = mChildViews.size();
 		for (int i = 0; i < mChildViews.size(); i++) {
 			View v = mChildViews.valueAt(i);
 			onNotInUse(v);
@@ -234,10 +182,6 @@ public class ReaderView
 		mViewCache.clear();
 
 		requestLayout();
-	}
-
-	public View getView(int i) {
-		return mChildViews.get(i);
 	}
 
 	public View getDisplayedView() {
@@ -349,7 +293,6 @@ public class ReaderView
 
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX,
 			float distanceY) {
-		PageView pageView = (PageView)getDisplayedView();
 		if (!tapDisabled)
 			onDocMotion();
 		if (!mScaling) {
@@ -459,15 +402,14 @@ public class ReaderView
 		super.onLayout(changed, left, top, right, bottom);
 
 		try {
-			onLayout2(changed, left, top, right, bottom);
+			onLayout2();
 		}
 		catch (java.lang.OutOfMemoryError e) {
 			System.out.println("Out of memory during layout");
 		}
 	}
 
-	private void onLayout2(boolean changed, int left, int top, int right,
-			int bottom) {
+	private void onLayout2() {
 
 		// "Edit mode" means when the View is being displayed in the Android GUI editor. (this class
 		// is instantiated in the IDE, so we need to be a bit careful what we do).
@@ -497,7 +439,7 @@ public class ReaderView
 			if (cv != null) {
 				boolean move;
 				cvOffset = subScreenSizeOffset(cv);
-				Point viewOffset = null;
+				Point viewOffset;
 
 				if (rv != null && collapseTwoPages) {
 					rvOffset = subScreenSizeOffset(rv);
@@ -548,7 +490,7 @@ public class ReaderView
 
 			// Remove not needed children and hold them for reuse
 			int numChildren = mChildViews.size();
-			int childIndices[] = new int[numChildren];
+			int[] childIndices = new int[numChildren];
 			for (int i = 0; i < numChildren; i++)
 				childIndices[i] = mChildViews.keyAt(i);
 

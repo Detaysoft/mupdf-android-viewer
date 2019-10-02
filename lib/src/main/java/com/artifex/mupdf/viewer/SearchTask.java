@@ -11,13 +11,13 @@ import android.os.Handler;
 import android.os.AsyncTask;
 
 class ProgressDialogX extends ProgressDialog {
-	public ProgressDialogX(Context context) {
+	ProgressDialogX(Context context) {
 		super(context);
 	}
 
 	private boolean mCancelled = false;
 
-	public boolean isCancelled() {
+	boolean isCancelled() {
 		return mCancelled;
 	}
 
@@ -36,7 +36,7 @@ public abstract class SearchTask {
 	private final AlertDialog.Builder mAlertBuilder;
 	private AsyncTask<Void,Integer,SearchTaskResult> mSearchTask;
 
-	public SearchTask(Context context, MuPDFCore core) {
+	SearchTask(Context context, MuPDFCore core) {
 		mContext = context;
 		mCore = core;
 		mHandler = new Handler();
@@ -45,7 +45,7 @@ public abstract class SearchTask {
 
 	protected abstract void onTextFound(SearchTaskResult result);
 
-	public void stop() {
+	void stop() {
 		if (mSearchTask != null) {
 			mSearchTask.cancel(true);
 			mSearchTask = null;
@@ -53,7 +53,7 @@ public abstract class SearchTask {
 	}
 
 	@SuppressLint("StaticFieldLeak")
-	public void go(final String text, int direction, int displayPage, int searchPage) {
+	void go(final String text, int direction, int displayPage, int searchPage) {
 		if (mCore == null)
 			return;
 		stop();
@@ -78,7 +78,7 @@ public abstract class SearchTask {
 
 				while (0 <= index && index < mCore.countPages() && !isCancelled()) {
 					publishProgress(index);
-					Quad searchHits[] = mCore.searchPage(index, text);
+					Quad[] searchHits = mCore.searchPage(index, text);
 
 					if (searchHits != null && searchHits.length > 0)
 						return new SearchTaskResult(text, index, searchHits);
@@ -109,7 +109,7 @@ public abstract class SearchTask {
 
 			@Override
 			protected void onProgressUpdate(Integer... values) {
-				progressDialog.setProgress(values[0].intValue());
+				progressDialog.setProgress(values[0]);
 			}
 
 			@Override

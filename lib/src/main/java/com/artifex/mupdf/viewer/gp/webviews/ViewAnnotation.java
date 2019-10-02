@@ -18,23 +18,19 @@ public class ViewAnnotation extends View {
     public float left, top ;
     public ReaderView readerView;
     public GPAnnotationInfo linkInfoExternal;
-    public GPAnnotationInfo linkInfoInternal;
-    private Context context;
     public boolean isHorizontalScrolling, isDummyAction;
     private MotionEvent previousMotionEvent;
     final ViewAnnotation viewAnnotation;
-    private GestureDetector gestureDetector;
+
 
     public ViewAnnotation(Context context) {
         super(context);
-        this.context = context;
         viewAnnotation = this;
         setCustomTouchListener();
     }
 
     public ViewAnnotation(Context context, GPAnnotationInfo linkInfoExternal) {
         super(context);
-        this.context = context;
         this.linkInfoExternal = linkInfoExternal;
         viewAnnotation = this;
         setCustomTouchListener();

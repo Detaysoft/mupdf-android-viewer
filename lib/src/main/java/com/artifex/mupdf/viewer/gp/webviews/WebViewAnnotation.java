@@ -23,6 +23,7 @@ import com.artifex.mupdf.viewer.gp.CustomPulseProgress;
 /**
  * Created by adem on 08/08/14.
  */
+@SuppressLint("ViewConstructor")
 public class WebViewAnnotation extends WebView {
     private final String TAG = "MyWebView";
 
@@ -120,7 +121,7 @@ public class WebViewAnnotation extends WebView {
 
     public boolean isHorizontalScrolling, isDummyAction;
     private MotionEvent previousMotionEvent;
-    @SuppressLint("ClickableViewAccessibility")
+    @SuppressLint({"ClickableViewAccessibility", "SetJavaScriptEnabled"})
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     public WebViewAnnotation(Context context, GPAnnotationInfo lie, CustomPulseProgress loading) {
         super(context);
@@ -176,12 +177,7 @@ public class WebViewAnnotation extends WebView {
                         web.y1 = event.getY();
                         web.setPreviousMotionEvent(event);
                         web.isHorizontalScrolling = false;
-                        if(web.isDummyAction){
-                            return false;
-                        }
-                        else{
-                            return true;
-                        }
+                        return !web.isDummyAction;
 
                     }
                     else if(event.getAction() == MotionEvent.ACTION_MOVE){
@@ -245,6 +241,7 @@ public class WebViewAnnotation extends WebView {
             this.previousMotionEvent = MotionEvent.obtain(event);
     }
 
+    /*
     public boolean isLoadingFinished() {
         return isLoadingFinished;
     }
@@ -252,4 +249,6 @@ public class WebViewAnnotation extends WebView {
     public void setLoadingFinished(boolean loadingFinished) {
         isLoadingFinished = loadingFinished;
     }
+
+     */
 }

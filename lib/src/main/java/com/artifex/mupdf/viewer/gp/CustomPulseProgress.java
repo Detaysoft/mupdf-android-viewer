@@ -44,30 +44,21 @@ public class CustomPulseProgress extends ViewGroup {
 
         img1 = new ImageView(context);
         img1.layout(0, 15, 10, 25);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-            img1.setBackground(icon);
-        else
-            img1.setBackgroundDrawable(icon);
+        img1.setBackground(icon);
         img1.setVisibility(GONE);
         this.addView(img1);
 
 
         img2 = new ImageView(context);
         img2.layout(15, 15, 25, 25);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-            img2.setBackground(icon);
-        else
-            img2.setBackgroundDrawable(icon);
+        img2.setBackground(icon);
         img2.setVisibility(GONE);
         this.addView(img2);
 
 
         img3 = new ImageView(context);
         img3.layout(30, 15, 40, 25);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-            img3.setBackground(icon);
-        else
-            img3.setBackgroundDrawable(icon);
+        img3.setBackground(icon);
         img3.setVisibility(GONE);
         this.addView(img3);
 
@@ -208,6 +199,7 @@ public class CustomPulseProgress extends ViewGroup {
         img3.startAnimation(scale3);
     }
 
+    /*
     public void stopAnim() {
         img1.clearAnimation();
         img1.invalidate();
@@ -219,4 +211,6 @@ public class CustomPulseProgress extends ViewGroup {
         img3.invalidate();
 
     }
+
+     */
 }

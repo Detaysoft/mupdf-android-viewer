@@ -1,8 +1,7 @@
 package com.artifex.mupdf.viewer.gp;
 
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import android.annotation.SuppressLint;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,13 +30,13 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
     // you provide access to all the views for a data item in a view holder
-    public static class MyViewHolder extends RecyclerView.ViewHolder {
+    static class MyViewHolder extends RecyclerView.ViewHolder {
         // data item views
-        public RelativeLayout relativeLayout;
-        public TextView pageNumber;
-        public ImageView previewImage;
+        private RelativeLayout relativeLayout;
+        TextView pageNumber;
+        ImageView previewImage;
 
-        public MyViewHolder(RelativeLayout v) {
+        MyViewHolder(RelativeLayout v) {
             super(v);
             pageNumber = v.findViewById(R.id.pageNumber);
             previewImage = v.findViewById(R.id.previewImage);
@@ -61,13 +60,12 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
 
         v.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
-        MyViewHolder vh = new MyViewHolder(v);
-        return vh;
+        return new MyViewHolder(v);
     }
 
     // Replace the contents of a view (invoked by the layout manager)
     @Override
-    public void onBindViewHolder(final MyViewHolder holder, final int position) {
+    public void onBindViewHolder(final MyViewHolder holder, @SuppressLint("RecyclerView") final int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
 
@@ -104,7 +102,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
          holder.relativeLayout.setTag(position);
     }
 
-    //animasyon iki kere tıklanma sorununa sebep olduğu için kaldırıldı.
+    /* animasyon iki kere tıklanma sorununa sebep olduğu için kaldırıldı.
     private void viewVisibleAnimator(final View view) {
         view.animate()
                 .alpha(1f)
@@ -116,6 +114,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
                     }
                 });
     }
+
+     */
     @Override
     public int getItemViewType(int position) {
         return position;

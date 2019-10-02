@@ -17,7 +17,7 @@ public class PageAdapter extends BaseAdapter {
 	private final SparseArray<PointF> mPageSizes = new SparseArray<PointF>();
 	private       Bitmap mSharedHqBm;
 
-	public PageAdapter(Context c, MuPDFCore core) {
+	PageAdapter(Context c, MuPDFCore core) {
 		mContext = c;
 		mCore = core;
 	}
@@ -34,7 +34,7 @@ public class PageAdapter extends BaseAdapter {
 		return 0;
 	}
 
-	public void releaseBitmaps()
+	void releaseBitmaps()
 	{
 		//  recycle and release the shared bitmap.
 		if (mSharedHqBm!=null)
@@ -42,7 +42,7 @@ public class PageAdapter extends BaseAdapter {
 		mSharedHqBm = null;
 	}
 
-	public void refresh() {
+	void refresh() {
 		mPageSizes.clear();
 	}
 
