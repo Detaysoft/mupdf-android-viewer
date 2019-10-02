@@ -858,6 +858,13 @@ public class DocumentActivity extends Activity
 		mReaderSearchResult = searchResult;
 	}
 
+	/**
+	 * get search result
+	 */
+	public ArrayList<GPReaderSearchResult> getReaderSearchResult() {
+		return mReaderSearchResult;
+	}
+
 	/*
 	 * scroll to index of item in thumbnail recycle view
 	 * */
