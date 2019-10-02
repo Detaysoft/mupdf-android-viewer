@@ -16,6 +16,7 @@ public class ThemeColor {
     private final String STRONG_LIGHT_THEME_COLOR = "#ffffff";
 
     public static final int DARK_THEME_TYPE = 1;
+    public static final int LIGHT_THEME_TYPE = 2;
 
 
     public ThemeColor() {
