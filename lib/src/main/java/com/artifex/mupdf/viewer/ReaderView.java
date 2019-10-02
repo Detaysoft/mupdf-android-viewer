@@ -791,7 +791,7 @@ public class ReaderView
 	}
 
 	public boolean onSingleTapUp(MotionEvent e) {
-		Link link = null;
+		Link link;
 		if (!tapDisabled) {
 			PageView pageView = (PageView) getDisplayedView();
 			if (mLinksEnabled && pageView != null && (link = pageView.hitLink(e.getX(), e.getY())) != null) {

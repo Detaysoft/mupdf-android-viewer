@@ -19,7 +19,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -82,7 +81,7 @@ public class DocumentActivity extends Activity
 	public final static String EXTRA_THEME_TYPE = "themeType";
 	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
 	/* The core rendering instance */
-	enum TopBarMode {Main, Search, More};
+	enum TopBarMode {Main, Search}
 
 	/**
 	 *  App: use app search methods and GalePress design
@@ -384,7 +383,6 @@ public class DocumentActivity extends Activity
 				}
 			});
 			alert.show();
-			return;
 		}
 	}
 
@@ -1392,7 +1390,7 @@ public class DocumentActivity extends Activity
 			searchAdapter.notifyDataSetChanged();
 		} else {
 			if(searchAdapter != null && mSearhResultListView != null) {
-				searchAdapter.textSearchList = new ArrayList<GPReaderSearchResult>();
+				searchAdapter.textSearchList = new ArrayList<>();
 				searchAdapter.notifyDataSetChanged();
 			}
 			if (showNotFoundMessage) {
