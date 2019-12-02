@@ -14,10 +14,10 @@ public class ThemeColor {
     private final String LIGHT_THEME_COLOR = "#ffffff";
     private final String STRONG_DARK_THEME_COLOR = "#000000";
     private final String STRONG_LIGHT_THEME_COLOR = "#ffffff";
-    private final String DISABLED_THEME_COLOR = "#939393";
 
     public static final int DARK_THEME_TYPE = 1;
     public static final int LIGHT_THEME_TYPE = 2;
+
 
     public ThemeColor() {
 
@@ -62,19 +62,17 @@ public class ThemeColor {
         this.foregroundColor = foregroundColor;
     }
 
-    public int getThemeType() {
-        return themeType;
-    }
 
     public int getForegroundColor() {
         return Color.parseColor(foregroundColor);
     }
 
-    public int getDisabledThemeColor() {
+    private int getDisabledThemeColor() {
+        String DISABLED_THEME_COLOR = "#939393";
         return Color.parseColor(DISABLED_THEME_COLOR);
     }
 
-    public ColorFilter getForegroundColorFilter() {
+    ColorFilter getForegroundColorFilter() {
         int color = getForegroundColor();
         int red = (color & 0xFF0000) / 0xFFFF;
         int green = (color & 0xFF00) / 0xFF;
@@ -98,7 +96,7 @@ public class ThemeColor {
         return new ColorMatrixColorFilter(matrixTheme);
     }
 
-    public ColorFilter getDisabledThemeColorFilter() {
+    ColorFilter getDisabledThemeColorFilter() {
         int color = getDisabledThemeColor();
         int redUnselected = (color & 0xFF0000) / 0xFFFF;
         int greenUnselected = (color & 0xFF00) / 0xFF;

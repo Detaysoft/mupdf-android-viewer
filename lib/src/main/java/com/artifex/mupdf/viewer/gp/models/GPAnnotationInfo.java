@@ -9,7 +9,7 @@ import com.artifex.mupdf.viewer.DocumentActivity;
 
 public class GPAnnotationInfo {
     public String url;
-    public String sourceUrl;
+    private String sourceUrl;
     public Link muPdfLink;
 
     public static final int COMPONENT_TYPE_ID_VIDEO 		=1;
@@ -17,16 +17,16 @@ public class GPAnnotationInfo {
     public static final int COMPONENT_TYPE_ID_MAP    		=3;
     public static final int COMPONENT_TYPE_ID_WEBLINK       =4;
     public static final int COMPONENT_TYPE_ID_WEB			=5;
-    public static final int COMPONENT_TYPE_ID_TOOLTIP		=6;
-    public static final int COMPONENT_TYPE_ID_SCROLLER		=7;
-    public static final int COMPONENT_TYPE_ID_SLIDESHOW		=8;
-    public static final int COMPONENT_TYPE_ID_360			=9;
+    //public static final int COMPONENT_TYPE_ID_TOOLTIP		=6;
+    //public static final int COMPONENT_TYPE_ID_SCROLLER		=7;
+    private static final int COMPONENT_TYPE_ID_SLIDESHOW		=8;
+    private static final int COMPONENT_TYPE_ID_360			=9;
     public static final int COMPONENT_TYPE_ID_BOOKMARK		=10;
     public static final int COMPONENT_TYPE_ID_ANIMATION		=11;
 
-    public static final int  MAP_TYPE_STANDART = 0;
-    public static final int  MAP_TYPE_HYBRID = 1;
-    public static final int  MAP_TYPE_SATELLITE = 2;
+    private static final int  MAP_TYPE_STANDART = 0;
+    private static final int  MAP_TYPE_HYBRID = 1;
+    private static final int  MAP_TYPE_SATELLITE = 2;
 
     public int componentAnnotationTypeId = -1;
     public boolean isModal = false;
@@ -85,16 +85,16 @@ public class GPAnnotationInfo {
                 uri = Uri.parse(url);
                 location = new Location("");
 
-                Double lat = 41.0053215;
+                double lat = 41.0053215;
                 if(uri.getQueryParameter("lat") != null && !uri.getQueryParameter("lat").isEmpty())
-                    lat = new Double(uri.getQueryParameter("lat"));
+                    lat = Double.valueOf(uri.getQueryParameter("lat"));
 
-                Double lon = 29.0121795;
+                double lon = 29.0121795;
                 if(uri.getQueryParameter("lon") != null && !uri.getQueryParameter("lon").isEmpty())
-                    lon = new Double(uri.getQueryParameter("lon"));
+                    lon = Double.valueOf(uri.getQueryParameter("lon"));
                 location.setLatitude(lat);
                 location.setLongitude(lon);
-                Double zoomValue = new Double(uri.getQueryParameter("slon"));
+                Double zoomValue = Double.valueOf(uri.getQueryParameter("slon"));
                 float zoomlevel = 12 - (int)(zoomValue / new Double("0.01"));
                 zoom = (zoomlevel / 2) + 12;
                 if(url.contains("standard")){
@@ -173,13 +173,11 @@ public class GPAnnotationInfo {
     public String getSourceUrlPath(Context context){
         if(isInternal){
             try {
-                StringBuilder stringBuilder = new StringBuilder("file://");
-                stringBuilder.append(context.getFilesDir().getAbsolutePath());
-                stringBuilder.append("/");
-                stringBuilder.append(((DocumentActivity)context).getContentId());
-                stringBuilder.append("/");
-                stringBuilder.append(sourceUrl);
-                return stringBuilder.toString();
+                return "file://" + context.getFilesDir().getAbsolutePath() +
+                        "/" +
+                        ((DocumentActivity) context).getContentId() +
+                        "/" +
+                        sourceUrl;
             }
             catch (Exception e){
                 e.printStackTrace();
@@ -192,15 +190,9 @@ public class GPAnnotationInfo {
     }
 
     public boolean mustHorizontalScrollLock() {
-        if(
-                componentAnnotationTypeId == COMPONENT_TYPE_ID_MAP ||
-                        componentAnnotationTypeId == COMPONENT_TYPE_ID_360 ||
-                        componentAnnotationTypeId == COMPONENT_TYPE_ID_SLIDESHOW ||
-                        componentAnnotationTypeId == COMPONENT_TYPE_ID_VIDEO
-
-        ){
-            return false;
-        }
-        return true;
+        return componentAnnotationTypeId != COMPONENT_TYPE_ID_MAP &&
+                componentAnnotationTypeId != COMPONENT_TYPE_ID_360 &&
+                componentAnnotationTypeId != COMPONENT_TYPE_ID_SLIDESHOW &&
+                componentAnnotationTypeId != COMPONENT_TYPE_ID_VIDEO;
     }
 }
