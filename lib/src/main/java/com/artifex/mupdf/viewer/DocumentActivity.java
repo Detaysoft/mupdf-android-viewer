@@ -229,7 +229,9 @@ public class DocumentActivity extends Activity
 		ProgressRecycler = findViewById(R.id.ProgressRecycler);
 
 		asyncThumb = new AsyncThumb();
-		asyncThumb.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		if (asyncThumb.getStatus() != AsyncTask.Status.RUNNING){
+			asyncThumb.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		}
 
 	}
 
@@ -1487,6 +1489,7 @@ public class DocumentActivity extends Activity
 
 	@Override
 	public void onBackPressed() {
+		asyncThumb.cancel(true);
 		finish();
 	}
 }
