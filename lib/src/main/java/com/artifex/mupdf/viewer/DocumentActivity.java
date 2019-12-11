@@ -241,12 +241,10 @@ public class DocumentActivity extends Activity
 		@Override
 		protected Void doInBackground(Void... voids) {
 			final PagePreview[] ppArray = new PagePreview[core.countPages()];
-
-			// TODO: make width and height dynamic
-			final Bitmap[] pageThumbnails = core.getPDFThumbnails(60, 90);
+			ArrayList<Bitmap> bm_images = core.getPDFThumbnails(60, 90);
 
 			for (int i = 0; i < core.countPages(); i++) {
-				ppArray[i] = new PagePreview(i, pageThumbnails[i]);
+				ppArray[i] = new PagePreview(i, bm_images.get(i));
 			}
 			mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
 			return null;

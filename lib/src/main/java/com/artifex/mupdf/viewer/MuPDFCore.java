@@ -204,10 +204,10 @@ public class MuPDFCore
 	 * returns pdf page thumbnail bitmaps
 	 */
 
-	Bitmap[] getPDFThumbnails(int w, int h){
+	ArrayList<Bitmap> getPDFThumbnails(int w, int h){
 
 		int pageCount = countPages();
-		Bitmap[] thumbnails = new Bitmap[pageCount];
+		ArrayList<Bitmap> bm_images = new ArrayList<>();
 
 		for (int i = 0; i < pageCount; i++) {
 			PointF pageSize = getPageSize(i);
@@ -217,8 +217,8 @@ public class MuPDFCore
 			final Bitmap bp = Bitmap.createBitmap(size.x,size.y, Bitmap.Config.ARGB_8888);
 
 			drawPage(bp,i,size.x, size.y, 0, 0,new Cookie());
-			thumbnails[i] = bp;
+			bm_images.add(bp);
 		}
-		return thumbnails;
+		return bm_images;
 	}
 }
