@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
@@ -232,8 +233,33 @@ public class DocumentActivity extends Activity
 		if (asyncThumb.getStatus() != AsyncTask.Status.RUNNING){
 			asyncThumb.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
 		}
-
 	}
+
+	private void saveImage(Bitmap finalBitmap, int index, String ContentId) {
+		String root = getFilesDir().getAbsolutePath();
+		File myDir = new File(root + "/saved_images/" + ContentId);
+		myDir.mkdirs();
+		String fname = "Image-"+ index +".jpg";
+		File file = new File (myDir, fname);
+		if (file.exists ()) file.delete();
+		try {
+			FileOutputStream out = new FileOutputStream(file);
+			finalBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+			out.flush();
+			out.close();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private Bitmap readImage(int index){
+		String root = getFilesDir().getAbsolutePath();
+		String fileName = root + "/saved_images/" + getContentId() + "/Image-" + index + ".jpg";
+		File file = new File(fileName);
+		return BitmapFactory.decodeFile(file.getAbsolutePath());
+	}
+
 
 	@SuppressLint("StaticFieldLeak")
 	public class AsyncThumb extends  AsyncTask<Void,Void,Void>{
@@ -241,10 +267,22 @@ public class DocumentActivity extends Activity
 		@Override
 		protected Void doInBackground(Void... voids) {
 			final PagePreview[] ppArray = new PagePreview[core.countPages()];
-			ArrayList<Bitmap> bm_images = core.getPDFThumbnails(60, 90);
+			String root = getFilesDir().getAbsolutePath();
+			String Cache = root + "/saved_images/" + getContentId();
 
-			for (int i = 0; i < core.countPages(); i++) {
-				ppArray[i] = new PagePreview(i, bm_images.get(i));
+			File file = new File(Cache);
+			if(!file.exists()){
+				ArrayList<Bitmap> bm_images = core.getPDFThumbnails(120, 180);
+				for (int i = 0; i < core.countPages(); i++){
+					ppArray[i] = new PagePreview(i, bm_images.get(i));
+					saveImage(bm_images.get(i), i, getContentId());
+				}
+			}
+			else {
+				for (int i = 0; i < core.countPages(); i++) {
+					Bitmap bitmap = readImage(i);
+					ppArray[i] = new PagePreview(i, bitmap);
+				}
 			}
 			mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
 			return null;
