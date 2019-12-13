@@ -83,6 +83,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
                 holder.pageNumber.setVisibility(VISIBLE);
                 lastSelectedViewHolder = holder;
                 selectedIndex = position;
+                startAnimation(lastSelectedViewHolder);
             }
         });
 
@@ -92,7 +93,6 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
 
         if (position == selectedIndex) {
             holder.pageNumber.setVisibility(VISIBLE);
-            //viewVisibleAnimator(holder.pageNumber);
             lastSelectedViewHolder = holder;
         }
         else
@@ -102,20 +102,26 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
          holder.relativeLayout.setTag(position);
     }
 
-    /* animasyon iki kere tıklanma sorununa sebep olduğu için kaldırıldı.
-    private void viewVisibleAnimator(final View view) {
-        view.animate()
-                .alpha(1f)
-                .setDuration(100)
-                .setListener(new AnimatorListenerAdapter() {
+    private void startAnimation(final MyViewHolder view ){
+        /**Animasyon sürekli tetiklendiği için listener yerine withEndAction kullanıldı.*/
+        view.previewImage.animate().alpha(0.6f).setDuration(300).
+                translationY(view.previewImage.getHeight()/8)
+                .withEndAction(new Runnable() {
                     @Override
-                    public void onAnimationEnd(Animator animation) {
-                        view.setVisibility(VISIBLE);
+                    public void run() {
+                        view.previewImage.animate().alpha(1).translationY(0);
+                    }
+                });
+
+        view.pageNumber.animate().setDuration(300).scaleY(0.2f)
+                .withEndAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        view.pageNumber.animate().scaleY(1);
                     }
                 });
     }
 
-     */
     @Override
     public int getItemViewType(int position) {
         return position;

@@ -869,7 +869,6 @@ public class DocumentActivity extends Activity
 	 * scroll to index of item in thumbnail recycle view
 	 * */
 	private void scrollToThumbnailPagePreviewIndex( int index) {
-		// TODO: offset parameter needs to be dynamic
         if(isPagePreviewActive)
             mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
     }
