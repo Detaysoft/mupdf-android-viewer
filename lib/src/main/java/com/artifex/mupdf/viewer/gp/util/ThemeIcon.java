@@ -7,7 +7,7 @@ public class ThemeIcon {
 
     private static ThemeIcon instance;
 
-    public final static int NO_FILTER = 0;
+    private final static int NO_FILTER = 0;
     public final static int FOREGROUND_COLOR_FILTER = 1;
     public final static int THEME_COLOR_FILTER = 2;
     public final static int OPPOSITE_THEME_COLOR_FILTER = 3;

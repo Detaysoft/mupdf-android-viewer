@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer.gp.webviews;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -29,16 +30,17 @@ public class ExtraWebViewActivity extends Activity {
     ImageButton forwardButton, backButton, refreshButton;
 
 
+    @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.extra_web_view_layout);
-        progressBar = (ProgressBar) findViewById(R.id.extra_web_view_load_progress_bar);
+        progressBar = findViewById(R.id.extra_web_view_load_progress_bar);
 
         if(getIntent().getExtras().containsKey("isModal"))
             isModal = this.getIntent().getExtras().getBoolean("isModal");
 
-        forwardButton = (ImageButton) findViewById(R.id.extra_web_view_next_button);
+        forwardButton = findViewById(R.id.extra_web_view_next_button);
         forwardButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_next, ThemeIcon.DISABLED_THEME_COLOR_FILTER));
         forwardButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -49,7 +51,7 @@ public class ExtraWebViewActivity extends Activity {
             }
         });
 
-        backButton = (ImageButton) findViewById(R.id.extra_web_view_back_button);
+        backButton = findViewById(R.id.extra_web_view_back_button);
         backButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_back, ThemeIcon.DISABLED_THEME_COLOR_FILTER));;
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,7 +62,7 @@ public class ExtraWebViewActivity extends Activity {
             }
         });
 
-        refreshButton = (ImageButton) findViewById(R.id.extra_web_view_refresh_button);
+        refreshButton = findViewById(R.id.extra_web_view_refresh_button);
         refreshButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -75,7 +77,7 @@ public class ExtraWebViewActivity extends Activity {
             refreshButton.setVisibility(View.GONE);
         }
 
-        ImageButton closeButton = (ImageButton) findViewById(R.id.extra_web_view_close_button);
+        ImageButton closeButton = findViewById(R.id.extra_web_view_close_button);
         closeButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.extra_web_close, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));;
 
         closeButton.setOnClickListener(new View.OnClickListener() {
@@ -92,7 +94,7 @@ public class ExtraWebViewActivity extends Activity {
             isMainActivitIntent = this.getIntent().getExtras().getBoolean("isMainActivitIntent");
 
 
-        webView = (WebView) findViewById(R.id.webview);
+        webView = findViewById(R.id.webview);
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onReceivedTitle(WebView view, String title) {

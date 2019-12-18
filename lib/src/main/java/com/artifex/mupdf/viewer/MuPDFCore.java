@@ -34,7 +34,7 @@ public class MuPDFCore
 	private int layoutH = 504;
 	private int layoutEM = 10;
 
-	public MuPDFCore(String filename) {
+	MuPDFCore(String filename) {
 		doc = Document.openDocument(filename);
 		doc.layout(layoutW, layoutH, layoutEM);
 		pageCount = doc.countPages();
@@ -42,7 +42,7 @@ public class MuPDFCore
 		currentPage = -1;
 	}
 
-	public MuPDFCore(byte buffer[], String magic) {
+	MuPDFCore(byte[] buffer, String magic) {
 		doc = Document.openDocument(buffer, magic);
 		doc.layout(layoutW, layoutH, layoutEM);
 		pageCount = doc.countPages();
@@ -51,15 +51,15 @@ public class MuPDFCore
 	}
 
 
-	public String getTitle() {
+	String getTitle() {
 		return doc.getMetaData(Document.META_INFO_TITLE);
 	}
 
-	public int countPages() {
+	int countPages() {
 		return pageCount;
 	}
 
-	public synchronized boolean isReflowable() {
+	synchronized boolean isReflowable() {
 		return doc.isReflowable();
 	}
 
@@ -105,12 +105,12 @@ public class MuPDFCore
 			}
 	}
 
-	public synchronized PointF getPageSize(int pageNum) {
+	synchronized PointF getPageSize(int pageNum) {
 		gotoPage(pageNum);
 		return new PointF(pageWidth, pageHeight);
 	}
 
-	public synchronized void onDestroy() {
+	synchronized void onDestroy() {
 		if (displayList != null)
 			displayList.destroy();
 		displayList = null;
@@ -122,11 +122,10 @@ public class MuPDFCore
 		doc = null;
 	}
 
-	public synchronized void drawPage(Bitmap bm, int pageNum,
-			int pageW, int pageH,
-			int patchX, int patchY,
-			int patchW, int patchH,
-			Cookie cookie) {
+	synchronized void drawPage(Bitmap bm, int pageNum,
+							   int pageW, int pageH,
+							   int patchX, int patchY,
+							   Cookie cookie) {
 			gotoPage(pageNum);
 
 			if (displayList == null)
@@ -150,25 +149,24 @@ public class MuPDFCore
 
 
 
-	public synchronized void updatePage(Bitmap bm, int pageNum,
-			int pageW, int pageH,
-			int patchX, int patchY,
-			int patchW, int patchH,
-			Cookie cookie) {
-		drawPage(bm, pageNum, pageW, pageH, patchX, patchY, patchW, patchH, cookie);
+	synchronized void updatePage(Bitmap bm, int pageNum,
+								 int pageW, int pageH,
+								 int patchX, int patchY,
+								 Cookie cookie) {
+		drawPage(bm, pageNum, pageW, pageH, patchX, patchY, cookie);
 	}
 
-	public synchronized Link[] getPageLinks(int pageNum) {
+	synchronized Link[] getPageLinks(int pageNum) {
 		gotoPage(pageNum);
 		return page.getLinks();
 	}
 
-	public synchronized Quad[] searchPage(int pageNum, String text) {
+	synchronized Quad[] searchPage(int pageNum, String text) {
 		gotoPage(pageNum);
 		return page.search(text);
 	}
 
-	public synchronized boolean hasOutline() {
+	synchronized boolean hasOutline() {
 		if (outline == null) {
 			try {
 				outline = doc.loadOutline();
@@ -179,7 +177,7 @@ public class MuPDFCore
 		return outline != null;
 	}
 
-	private void flattenOutlineNodes(ArrayList<OutlineActivity.Item> result, Outline list[], String indent) {
+	private void flattenOutlineNodes(ArrayList<OutlineActivity.Item> result, Outline[] list, String indent) {
 		for (Outline node : list) {
 			if (node.title != null)
 				result.add(new OutlineActivity.Item(indent + node.title, node.page));
@@ -188,17 +186,17 @@ public class MuPDFCore
 		}
 	}
 
-	public  synchronized ArrayList<OutlineActivity.Item> getOutline() {
+	synchronized ArrayList<OutlineActivity.Item> getOutline() {
 		ArrayList<OutlineActivity.Item> result = new ArrayList<OutlineActivity.Item>();
 		flattenOutlineNodes(result, outline, "");
 		return result;
 	}
 
-	public synchronized boolean needsPassword() {
+	synchronized boolean needsPassword() {
 		return doc.needsPassword();
 	}
 
-	public synchronized boolean authenticatePassword(String password) {
+	synchronized boolean authenticatePassword(String password) {
 		return doc.authenticatePassword(password);
 	}
 
@@ -206,10 +204,10 @@ public class MuPDFCore
 	 * returns pdf page thumbnail bitmaps
 	 */
 
-	public Bitmap[] getPDFThumbnails(int w, int h){
+	ArrayList<Bitmap> getPDFThumbnails(int w, int h){
 
 		int pageCount = countPages();
-		Bitmap[] thumbnails = new Bitmap[pageCount];
+		ArrayList<Bitmap> bm_images = new ArrayList<>();
 
 		for (int i = 0; i < pageCount; i++) {
 			PointF pageSize = getPageSize(i);
@@ -218,9 +216,9 @@ public class MuPDFCore
 			Point size = new Point((int)(pageSize.x*mSourceScale), (int)(pageSize.y*mSourceScale));
 			final Bitmap bp = Bitmap.createBitmap(size.x,size.y, Bitmap.Config.ARGB_8888);
 
-			drawPage(bp,i,size.x, size.y, 0, 0, size.x, size.y,new Cookie());
-			thumbnails[i] = bp;
+			drawPage(bp,i,size.x, size.y, 0, 0,new Cookie());
+			bm_images.add(bp);
 		}
-		return thumbnails;
+		return bm_images;
 	}
 }

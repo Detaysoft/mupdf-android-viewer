@@ -15,7 +15,7 @@ public class OutlineActivity extends ListActivity
 	public static class Item implements Serializable {
 		public String title;
 		public int page;
-		public Item(String title, int page) {
+		Item(String title, int page) {
 			this.title = title;
 			this.page = page;
 		}

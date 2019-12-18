@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
@@ -19,7 +20,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -82,7 +82,7 @@ public class DocumentActivity extends Activity
 	public final static String EXTRA_THEME_TYPE = "themeType";
 	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
 	/* The core rendering instance */
-	enum TopBarMode {Main, Search, More};
+	enum TopBarMode {Main, Search}
 
 	/**
 	 *  App: use app search methods and GalePress design
@@ -166,9 +166,9 @@ public class DocumentActivity extends Activity
 	private MuPDFCore openFile(String path)
 	{
 		int lastSlashPos = path.lastIndexOf('/');
-		mFileName = new String(lastSlashPos == -1
-					? path
-					: path.substring(lastSlashPos+1));
+		mFileName = lastSlashPos == -1
+				? path
+				: path.substring(lastSlashPos + 1);
 		System.out.println("Trying to open " + path);
 		try
 		{
@@ -188,7 +188,7 @@ public class DocumentActivity extends Activity
 		return core;
 	}
 
-	private MuPDFCore openBuffer(byte buffer[], String magic)
+	private MuPDFCore openBuffer(byte[] buffer, String magic)
 	{
 		System.out.println("Trying to open byte buffer");
 		try
@@ -220,7 +220,7 @@ public class DocumentActivity extends Activity
 
 		DisplayMetrics metrics = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
-		mDisplayDPI = (int)metrics.densityDpi;
+		mDisplayDPI = metrics.densityDpi;
 
 		mAlertBuilder = new AlertDialog.Builder(this);
 
@@ -230,21 +230,59 @@ public class DocumentActivity extends Activity
 		ProgressRecycler = findViewById(R.id.ProgressRecycler);
 
 		asyncThumb = new AsyncThumb();
-		asyncThumb.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-
+		if (asyncThumb.getStatus() != AsyncTask.Status.RUNNING){
+			asyncThumb.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		}
 	}
 
+	private void saveImage(Bitmap finalBitmap, int index, String ContentId) {
+		String root = getFilesDir().getAbsolutePath();
+		File myDir = new File(root + "/saved_images/" + ContentId);
+		myDir.mkdirs();
+		String fname = "Image-"+ index +".jpg";
+		File file = new File (myDir, fname);
+		if (file.exists ()) file.delete();
+		try {
+			FileOutputStream out = new FileOutputStream(file);
+			finalBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+			out.flush();
+			out.close();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	private Bitmap readImage(int index){
+		String root = getFilesDir().getAbsolutePath();
+		String fileName = root + "/saved_images/" + getContentId() + "/Image-" + index + ".jpg";
+		File file = new File(fileName);
+		return BitmapFactory.decodeFile(file.getAbsolutePath());
+	}
+
+
+	@SuppressLint("StaticFieldLeak")
 	public class AsyncThumb extends  AsyncTask<Void,Void,Void>{
 
 		@Override
 		protected Void doInBackground(Void... voids) {
 			final PagePreview[] ppArray = new PagePreview[core.countPages()];
+			String root = getFilesDir().getAbsolutePath();
+			String Cache = root + "/saved_images/" + getContentId();
 
-			// TODO: make width and height dynamic
-			final Bitmap[] pageThumbnails = core.getPDFThumbnails(60, 90);
-
-			for (int i = 0; i < core.countPages(); i++) {
-				ppArray[i] = new PagePreview(i, pageThumbnails[i]);
+			File file = new File(Cache);
+			if(!file.exists()){
+				ArrayList<Bitmap> bm_images = core.getPDFThumbnails(120, 180);
+				for (int i = 0; i < core.countPages(); i++){
+					ppArray[i] = new PagePreview(i, bm_images.get(i));
+					saveImage(bm_images.get(i), i, getContentId());
+				}
+			}
+			else {
+				for (int i = 0; i < core.countPages(); i++) {
+					Bitmap bitmap = readImage(i);
+					ppArray[i] = new PagePreview(i, bitmap);
+				}
 			}
 			mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
 			return null;
@@ -318,7 +356,7 @@ public class DocumentActivity extends Activity
 
 			//---------- GalePress Integration [End]
 
-			byte buffer[] = null;
+			byte[] buffer;
 
 			if (Intent.ACTION_VIEW.equals(intent.getAction())) {
 				Uri uri = intent.getData();
@@ -383,7 +421,6 @@ public class DocumentActivity extends Activity
 				}
 			});
 			alert.show();
-			return;
 		}
 	}
 
@@ -519,7 +556,7 @@ public class DocumentActivity extends Activity
 
 		mRecylerPagePreviewLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
 
-		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview);
+		mRecyclerPagePreview = mButtonsView.findViewById(R.id.recyclerPagePreview);
 	    mRecyclerPagePreview.setLayoutManager(mRecylerPagePreviewLayoutManager);
 		mRecyclerPagePreview.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
@@ -626,13 +663,13 @@ public class DocumentActivity extends Activity
 			mDrawerLayout.setScrimColor(Color.TRANSPARENT);
 
 			// left menu title
-			TextView menuTitle = (TextView) findViewById(R.id.reader_left_menu_title);
+			TextView menuTitle = findViewById(R.id.reader_left_menu_title);
 			menuTitle.setText(this.content.getName());
 			menuTitle.setTextColor(ThemeColor.getInstance().getThemeColor());
 			menuTitle.setTypeface(ThemeFont.getInstance().getSemiBoldItalicFont(this));
 			menuTitle.setBackgroundColor(ThemeColor.getInstance().getForegroundColor());
 
-			ListView leftList = (ListView) findViewById(R.id.reader_left_menu_listView);
+			ListView leftList = findViewById(R.id.reader_left_menu_listView);
 			leftList.setBackgroundColor(ThemeColor.getInstance().getForegroundColor());
 			leftList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 				@Override
@@ -770,13 +807,11 @@ public class DocumentActivity extends Activity
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		switch (requestCode) {
-		case OUTLINE_REQUEST:
+		if (requestCode == OUTLINE_REQUEST) {
 			if (resultCode >= RESULT_FIRST_USER) {
 				mDocView.pushHistory();
-				mDocView.setDisplayedViewIndex(resultCode-RESULT_FIRST_USER);
+				mDocView.setDisplayedViewIndex(resultCode - RESULT_FIRST_USER);
 			}
-			break;
 		}
 		super.onActivityResult(requestCode, resultCode, data);
 	}
@@ -872,7 +907,6 @@ public class DocumentActivity extends Activity
 	 * scroll to index of item in thumbnail recycle view
 	 * */
 	private void scrollToThumbnailPagePreviewIndex( int index) {
-		// TODO: offset parameter needs to be dynamic
         if(isPagePreviewActive)
             mRecylerPagePreviewLayoutManager.scrollToPositionWithOffset(index, mRecyclerPagePreview.getRight()/2-80);
     }
@@ -1049,18 +1083,18 @@ public class DocumentActivity extends Activity
 
 	private void makeButtonsView() {
 		mButtonsView = getLayoutInflater().inflate(R.layout.document_activity, null);
-		mFilenameView = (TextView)mButtonsView.findViewById(R.id.docNameText);
-		mRecyclerPagePreview = (RecyclerView) mButtonsView.findViewById(R.id.recyclerPagePreview); // GP recycler view
-		mSearchButton = (ImageButton)mButtonsView.findViewById(R.id.searchButton);
-		mOutlineButton = (ImageButton)mButtonsView.findViewById(R.id.outlineButton);
-		mShareButton = (ImageButton)mButtonsView.findViewById(R.id.shareButton); // GP share button
-		mTopBarSwitcher = (ViewAnimator)mButtonsView.findViewById(R.id.switcher);
-		mSearchBack = (ImageButton)mButtonsView.findViewById(R.id.searchBack);
-		mSearchFwd = (ImageButton)mButtonsView.findViewById(R.id.searchForward);
-		mSearchClose = (ImageButton)mButtonsView.findViewById(R.id.searchClose);
-		mSearchText = (EditText)mButtonsView.findViewById(R.id.searchText);
-		mLinkButton = (ImageButton)mButtonsView.findViewById(R.id.linkButton);
-		mReflowButton = (ImageButton)mButtonsView.findViewById(R.id.reflowButton);
+		mFilenameView = mButtonsView.findViewById(R.id.docNameText);
+		mRecyclerPagePreview = mButtonsView.findViewById(R.id.recyclerPagePreview); // GP recycler view
+		mSearchButton = mButtonsView.findViewById(R.id.searchButton);
+		mOutlineButton = mButtonsView.findViewById(R.id.outlineButton);
+		mShareButton = mButtonsView.findViewById(R.id.shareButton); // GP share button
+		mTopBarSwitcher = mButtonsView.findViewById(R.id.switcher);
+		mSearchBack = mButtonsView.findViewById(R.id.searchBack);
+		mSearchFwd = mButtonsView.findViewById(R.id.searchForward);
+		mSearchClose = mButtonsView.findViewById(R.id.searchClose);
+		mSearchText = mButtonsView.findViewById(R.id.searchText);
+		mLinkButton = mButtonsView.findViewById(R.id.linkButton);
+		mReflowButton = mButtonsView.findViewById(R.id.reflowButton);
 
 		// GalePress crop and share button
 		Drawable icon = ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.reader_share, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER);
@@ -1178,14 +1212,12 @@ public class DocumentActivity extends Activity
 	}
 
 	private static boolean savePic(Bitmap b, String strFileName) {
-		FileOutputStream fos = null;
+		FileOutputStream fos;
 		try {
 			fos = new FileOutputStream(strFileName);
-			if (null != fos) {
-				b.compress(Bitmap.CompressFormat.PNG, 90, fos);
-				fos.flush();
-				fos.close();
-			}
+			b.compress(Bitmap.CompressFormat.PNG, 90, fos);
+			fos.flush();
+			fos.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 			return false;
@@ -1262,7 +1294,7 @@ public class DocumentActivity extends Activity
 
 	public void openSearchPopup() {
 		// Inflate the popup_layout.xml
-		RelativeLayout viewGroup = (RelativeLayout) findViewById(R.id.reader_search_popup);
+		RelativeLayout viewGroup = findViewById(R.id.reader_search_popup);
 		LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		final View layout = layoutInflater.inflate(R.layout.reader_search_popup, viewGroup);
 
@@ -1280,7 +1312,7 @@ public class DocumentActivity extends Activity
 		});
 		mSearchPopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
 
-		mPopupSearchEditText = ((EditText) layout.findViewById(R.id.popup_searchText));
+		mPopupSearchEditText = layout.findViewById(R.id.popup_searchText);
 		if (mReaderSearchWord != null)
 			mPopupSearchEditText.setText(mReaderSearchWord);
 
@@ -1319,7 +1351,7 @@ public class DocumentActivity extends Activity
 		layout.findViewById(R.id.popup_clearSearch).setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.reader_search_clear, ThemeIcon.THEME_COLOR_FILTER));
 
 		// search progress
-		mSearchProgressBaseView = (LinearLayout) layout.findViewById(R.id.popup_progress_search_base);
+		mSearchProgressBaseView = layout.findViewById(R.id.popup_progress_search_base);
 		((ProgressBar)layout.findViewById(R.id.popup_search_progress)).getIndeterminateDrawable().setColorFilter(ThemeColor.getInstance().getStrongOppositeThemeColor(), android.graphics.PorterDuff.Mode.MULTIPLY);
 
 		// textview background
@@ -1328,7 +1360,7 @@ public class DocumentActivity extends Activity
 		// input background
 		((LinearLayout) mPopupSearchEditText.getParent().getParent()).setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
 
-		mSearchClearBaseView = (LinearLayout) layout.findViewById(R.id.popup_clear_search_base);
+		mSearchClearBaseView = layout.findViewById(R.id.popup_clear_search_base);
 		mSearchClearBaseView.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -1344,7 +1376,7 @@ public class DocumentActivity extends Activity
 		});
 
 
-		mSearhResultListView = ((ListView) layout.findViewById(R.id.reader_search_list));
+		mSearhResultListView = layout.findViewById(R.id.reader_search_list);
 		if(mReaderSearchResult != null) {
 			searchAdapter = new SearchResultAdapter(mReaderSearchResult, DocumentActivity.this);
 		}
@@ -1402,7 +1434,7 @@ public class DocumentActivity extends Activity
 			searchAdapter.notifyDataSetChanged();
 		} else {
 			if(searchAdapter != null && mSearhResultListView != null) {
-				searchAdapter.textSearchList = new ArrayList<GPReaderSearchResult>();
+				searchAdapter.textSearchList = new ArrayList<>();
 				searchAdapter.notifyDataSetChanged();
 			}
 			if (showNotFoundMessage) {
@@ -1416,7 +1448,7 @@ public class DocumentActivity extends Activity
 		private ArrayList<GPReaderSearchResult> textSearchList;
 		private Context mContext;
 
-		public SearchResultAdapter(ArrayList<GPReaderSearchResult> textSearchList, Context mContext) {
+		SearchResultAdapter(ArrayList<GPReaderSearchResult> textSearchList, Context mContext) {
 			this.mContext = mContext;
 			this.textSearchList = textSearchList;
 		}
@@ -1436,6 +1468,7 @@ public class DocumentActivity extends Activity
 			return 0;
 		}
 
+		@SuppressLint("SetTextI18n")
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			if (convertView == null) {
@@ -1445,13 +1478,13 @@ public class DocumentActivity extends Activity
 			}
 
 			GPReaderSearchResult pageItem = textSearchList.get(position);
-			TextView title = ((TextView) convertView.findViewById(R.id.reader_search_result_page_title));
+			TextView title = convertView.findViewById(R.id.reader_search_result_page_title);
 			title.setText(Html.fromHtml(pageItem.getText()).toString());
 			title.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
 			title.setTypeface(ThemeFont.getInstance().getRegularFont(mContext));
 
 
-			TextView page = ((TextView) convertView.findViewById(R.id.reader_search_result_page_page));
+			TextView page = convertView.findViewById(R.id.reader_search_result_page_page);
 			page.setText("" + (pageItem.getPage()));
 			page.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
 			page.setTypeface(ThemeFont.getInstance().getLightFont(mContext));
@@ -1491,6 +1524,7 @@ public class DocumentActivity extends Activity
 
 	@Override
 	public void onBackPressed() {
+		asyncThumb.cancel(true);
 		finish();
 	}
 }

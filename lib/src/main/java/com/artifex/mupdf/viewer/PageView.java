@@ -49,6 +49,7 @@ class OpaqueImageView extends android.support.v7.widget.AppCompatImageView {
 	}
 }
 
+@SuppressLint("ViewConstructor")
 public class PageView extends ViewGroup {
 	private final MuPDFCore mCore;
 
@@ -176,6 +177,7 @@ public class PageView extends ViewGroup {
 		setBackgroundColor(BACKGROUND_COLOR);
 	}
 
+	@SuppressLint("StaticFieldLeak")
 	public void setPage(int page, PointF size) {
 		// Cancel pending render task
 		if (mDrawEntire != null) {
@@ -198,8 +200,7 @@ public class PageView extends ViewGroup {
 		// Calculate scaled size that fits within the screen limits
 		// This is the size at minimum zoom
 		mSourceScale = Math.min(mParentSize.x/size.x, mParentSize.y/size.y);
-		Point newSize = new Point((int)(size.x*mSourceScale), (int)(size.y*mSourceScale));
-		mSize = newSize;
+		mSize = new Point((int)(size.x*mSourceScale), (int)(size.y*mSourceScale));
 
 		mEntire.setImageBitmap(null);
 		mEntire.invalidate();
@@ -231,7 +232,7 @@ public class PageView extends ViewGroup {
 		mGetLinkInfo.execute();
 
 		// Render the page in the background
-		mDrawEntire = new CancellableAsyncTask<Void, Void>(getDrawPageTask(mEntireBm, mSize.x, mSize.y, 0, 0, mSize.x, mSize.y)) {
+		mDrawEntire = new CancellableAsyncTask<Void, Void>(getDrawPageTask(mEntireBm, mSize.x, mSize.y, 0, 0)) {
 
 			@Override
 			public void onPreExecute() {
@@ -274,12 +275,12 @@ public class PageView extends ViewGroup {
 					// Work out current total scale factor
 					// from source to view
 					final float scale = mSourceScale*(float)getWidth()/(float)mSize.x;
-					final Paint paint = new Paint();
+					@SuppressLint("DrawAllocation") final Paint paint = new Paint();
 
 					if (!mIsBlank && mSearchBoxes != null) {
 						paint.setColor(HIGHLIGHT_COLOR);
 						for (Quad q : mSearchBoxes) {
-							Path path = new Path();
+							@SuppressLint("DrawAllocation") Path path = new Path();
 							path.moveTo(q.ul_x * scale, q.ul_y * scale);
 							path.lineTo(q.ll_x * scale, q.ll_y * scale);
 							path.lineTo(q.lr_x * scale, q.lr_y * scale);
@@ -304,7 +305,7 @@ public class PageView extends ViewGroup {
 		requestLayout();
 	}
 
-	public void setSearchBoxes(Quad searchBoxes[]) {
+	public void setSearchBoxes(Quad[] searchBoxes) {
 		mSearchBoxes = searchBoxes;
 		if (mSearchView != null)
 			mSearchView.invalidate();
@@ -319,9 +320,8 @@ public class PageView extends ViewGroup {
 	//---------- GalePress Integration [Start]
 
 	private void bringAnnotationsToFront(PageView pageView) {
-		ArrayList<View> gpAnnotations = new ArrayList<View>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
-			View view = (View) pageView.getChildAt(i);
+			View view = pageView.getChildAt(i);
 			if (view instanceof WebView) {
 				view.bringToFront();
 			}
@@ -343,7 +343,7 @@ public class PageView extends ViewGroup {
 	public ArrayList<View> getGPAnnotations(PageView pageView) {
 		ArrayList<View> gpAnnotations = new ArrayList<View>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
-			View view = (View) pageView.getChildAt(i);
+			View view = pageView.getChildAt(i);
 			if (view instanceof WebView) {
 				gpAnnotations.add(view);
 			}
@@ -355,7 +355,7 @@ public class PageView extends ViewGroup {
 	public ArrayList<View> getGPCustomProgress(PageView pageView) {
 		ArrayList<View> gpprogress = new ArrayList<View>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
-			View view = (View) pageView.getChildAt(i);
+			View view = pageView.getChildAt(i);
 			if (view instanceof CustomPulseProgress) {
 				gpprogress.add(view);
 			}
@@ -366,7 +366,7 @@ public class PageView extends ViewGroup {
 	public ArrayList<View> getGPModals(PageView pageView) {
 		ArrayList<View> modals = new ArrayList<View>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
-			View view = (View) pageView.getChildAt(i);
+			View view = pageView.getChildAt(i);
 			if (view.getTag() != null && view.getTag().toString().compareTo("modal") == 0) {
 				modals.add(view);
 			}
@@ -377,7 +377,7 @@ public class PageView extends ViewGroup {
 	public ArrayList<View> getGPPageLinks(PageView pageView) {
 		ArrayList<View> modals = new ArrayList<View>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
-			View view = (View) pageView.getChildAt(i);
+			View view = pageView.getChildAt(i);
 			if (view.getTag() != null && view.getTag().toString().compareTo("pagelink") == 0) {
 				modals.add(view);
 			}
@@ -388,7 +388,7 @@ public class PageView extends ViewGroup {
 	public ArrayList<View> getGPWebLinks(PageView pageView) {
 		ArrayList<View> modals = new ArrayList<View>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
-			View view = (View) pageView.getChildAt(i);
+			View view = pageView.getChildAt(i);
 			if (view.getTag() != null && view.getTag().toString().compareTo("weblink") == 0) {
 				modals.add(view);
 			}
@@ -571,7 +571,7 @@ public class PageView extends ViewGroup {
 
 				}
 			}
-			else if((((GPAnnotationInfo) link).componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_MAP) ){
+			else if((link.componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_MAP) ){
 				// Map Annotations
 				// http://adem.me/map/index.html?lat=41.033621&lon=28.952785&zoom=16&w=400&h=300&mapType=0
 				Uri.Builder builder = new Uri.Builder();
@@ -601,9 +601,9 @@ public class PageView extends ViewGroup {
 				web.loadUrl(mapUrl);
 				addView(web);
 			}
-			else if(((GPAnnotationInfo) link).componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_WEBLINK){
-				final boolean isMailto = ((GPAnnotationInfo) link).isMailto;
-				ViewAnnotation view = new ViewAnnotation(mContext, ((GPAnnotationInfo) link));
+			else if(link.componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_WEBLINK){
+				final boolean isMailto = link.isMailto;
+				ViewAnnotation view = new ViewAnnotation(mContext, link);
 				view.layout(left,top,right,bottom);
 				view.setBackgroundColor(Color.TRANSPARENT);
 				view.setTag("weblink");
@@ -649,19 +649,15 @@ public class PageView extends ViewGroup {
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		int x, y;
-		switch(View.MeasureSpec.getMode(widthMeasureSpec)) {
-		case View.MeasureSpec.UNSPECIFIED:
+		if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED) {
 			x = mSize.x;
-			break;
-		default:
-			x = View.MeasureSpec.getSize(widthMeasureSpec);
+		} else {
+			x = MeasureSpec.getSize(widthMeasureSpec);
 		}
-		switch(View.MeasureSpec.getMode(heightMeasureSpec)) {
-		case View.MeasureSpec.UNSPECIFIED:
+		if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) {
 			y = mSize.y;
-			break;
-		default:
-			y = View.MeasureSpec.getSize(heightMeasureSpec);
+		} else {
+			y = MeasureSpec.getSize(heightMeasureSpec);
 		}
 
 		setMeasuredDimension(x, y);
@@ -726,7 +722,7 @@ public class PageView extends ViewGroup {
 						float original_y;
 						if (pageView.mGPLinks != null) {
 							for (GPAnnotationInfo link : pageView.mGPLinks) {
-								if (((GPAnnotationInfo) link).webViewId == view.getId()) {
+								if (link.webViewId == view.getId()) {
 									original_x = link.muPdfLink.bounds.x0 * pageView.mSourceScale;
 									original_y = link.muPdfLink.bounds.y0 * pageView.mSourceScale;
 									view.setPivotX(0);
@@ -746,7 +742,7 @@ public class PageView extends ViewGroup {
 						  CustomPulseProgress progress = (CustomPulseProgress) view;
 						  if (pageView.mGPLinks != null) {
 							  for (GPAnnotationInfo link : pageView.mGPLinks) {
-                                  if (((GPAnnotationInfo) link).webViewId == view.getId()) {
+                                  if (link.webViewId == view.getId()) {
                                       original_x = (link.muPdfLink.bounds.x0 + link.muPdfLink.bounds.x1) / 2 * pageView.mSourceScale - progressSize / 2;
                                       original_y = (link.muPdfLink.bounds.y0 + link.muPdfLink.bounds.y1) / 2 * pageView.mSourceScale - progressSize / 2;
 									  progress.setPivotX(0);
@@ -791,7 +787,7 @@ public class PageView extends ViewGroup {
 			if (area_unchanged && !update)
 				return;
 
-			boolean completeRedraw = !(area_unchanged && update);
+			boolean completeRedraw = !area_unchanged;
 
 			// Stop the drawing of previous patch if still going
 			if (mDrawPatch != null) {
@@ -813,12 +809,10 @@ public class PageView extends ViewGroup {
 
 			if (completeRedraw)
 				task = getDrawPageTask(mPatchBm, patchViewSize.x, patchViewSize.y,
-								patchArea.left, patchArea.top,
-								patchArea.width(), patchArea.height());
+								patchArea.left, patchArea.top);
 			else
 				task = getUpdatePageTask(mPatchBm, patchViewSize.x, patchViewSize.y,
-						patchArea.left, patchArea.top,
-						patchArea.width(), patchArea.height());
+						patchArea.left, patchArea.top);
 
 			mDrawPatch = new CancellableAsyncTask<Void,Void>(task) {
 
@@ -838,6 +832,7 @@ public class PageView extends ViewGroup {
 		}
 	}
 
+	/*
 	public void update() {
 		// Cancel pending render task
 		if (mDrawEntire != null) {
@@ -863,6 +858,7 @@ public class PageView extends ViewGroup {
 
 		updateHq(true);
 	}
+	*/
 
 	public void removeHq() {
 			// Stop the drawing of the patch if still going
@@ -906,7 +902,7 @@ public class PageView extends ViewGroup {
 	}
 
 	protected CancellableTaskDefinition<Void, Void> getDrawPageTask(final Bitmap bm, final int sizeX, final int sizeY,
-			final int patchX, final int patchY, final int patchWidth, final int patchHeight) {
+			final int patchX, final int patchY) {
 		return new MuPDFCancellableTaskDefinition<Void, Void>() {
 			@Override
 			public Void doInBackground(Cookie cookie, Void ... params) {
@@ -915,7 +911,7 @@ public class PageView extends ViewGroup {
 				// if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB &&
 				//		Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 				//	bm.eraseColor(0);
-				mCore.drawPage(bm, mPageNumber, sizeX, sizeY, patchX, patchY, patchWidth, patchHeight, cookie);
+				mCore.drawPage(bm, mPageNumber, sizeX, sizeY, patchX, patchY,cookie);
 				return null;
 			}
 		};
@@ -923,7 +919,7 @@ public class PageView extends ViewGroup {
 	}
 
 	protected CancellableTaskDefinition<Void, Void> getUpdatePageTask(final Bitmap bm, final int sizeX, final int sizeY,
-			final int patchX, final int patchY, final int patchWidth, final int patchHeight)
+			final int patchX, final int patchY)
 	{
 		return new MuPDFCancellableTaskDefinition<Void, Void>() {
 			@Override
@@ -933,7 +929,7 @@ public class PageView extends ViewGroup {
 				// if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB &&
 				//		Build.VERSION.SDK_INT < Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 				//	bm.eraseColor(0);
-				mCore.updatePage(bm, mPageNumber, sizeX, sizeY, patchX, patchY, patchWidth, patchHeight, cookie);
+				mCore.updatePage(bm, mPageNumber, sizeX, sizeY, patchX, patchY, cookie);
 				return null;
 			}
 		};
