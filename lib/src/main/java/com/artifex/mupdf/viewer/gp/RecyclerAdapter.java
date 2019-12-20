@@ -79,8 +79,9 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
 
                 mDocumentActivity.jumpToPageAtIndex(position);
                 lastSelectedViewHolder.pageNumber.setVisibility(View.GONE);
-                //viewVisibleAnimator(holder.pageNumber);
+                lastSelectedViewHolder.relativeLayout.setElevation(0);
                 holder.pageNumber.setVisibility(VISIBLE);
+                holder.relativeLayout.setElevation(20);
                 lastSelectedViewHolder = holder;
                 selectedIndex = position;
                 startAnimation(lastSelectedViewHolder);
@@ -93,17 +94,20 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
 
         if (position == selectedIndex) {
             holder.pageNumber.setVisibility(VISIBLE);
+            holder.relativeLayout.setElevation(20);
             lastSelectedViewHolder = holder;
         }
-        else
-         holder.pageNumber.setVisibility(View.GONE);
+        else{
+            holder.pageNumber.setVisibility(View.GONE);
+            holder.relativeLayout.setElevation(0);
+        }
 
          holder.previewImage.setImageBitmap(mDataset[position].getImage());
          holder.relativeLayout.setTag(position);
     }
 
     private void startAnimation(final MyViewHolder view ){
-        /**Animasyon sürekli tetiklendiği için listener yerine withEndAction kullanıldı.*/
+        /**Animasyon sürekli tetiklendiği için listener yerine withEndAction kullanıldı. p1597*/
         view.previewImage.animate().alpha(0.6f).setDuration(300).
                 translationY(view.previewImage.getHeight()/8)
                 .withEndAction(new Runnable() {

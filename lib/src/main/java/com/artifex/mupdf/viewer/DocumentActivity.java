@@ -261,6 +261,7 @@ public class DocumentActivity extends Activity
 	}
 
 
+
 	@SuppressLint("StaticFieldLeak")
 	public class AsyncThumb extends  AsyncTask<Void,Void,Void>{
 
