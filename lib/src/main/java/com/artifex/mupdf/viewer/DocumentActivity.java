@@ -9,6 +9,7 @@ import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -162,6 +163,7 @@ public class DocumentActivity extends Activity
 
 	// GP orientation
 	private int mOrientation;
+	private boolean deviceType;
 
 	private MuPDFCore openFile(String path)
 	{
@@ -217,6 +219,9 @@ public class DocumentActivity extends Activity
 
 		// GP Orientation
 		mOrientation = getResources().getConfiguration().orientation;
+		deviceType = getResources().getBoolean(R.bool.isTablet);
+		if(!deviceType)
+			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
 		DisplayMetrics metrics = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -259,7 +264,6 @@ public class DocumentActivity extends Activity
 		File file = new File(fileName);
 		return BitmapFactory.decodeFile(file.getAbsolutePath());
 	}
-
 
 
 	@SuppressLint("StaticFieldLeak")
@@ -513,16 +517,16 @@ public class DocumentActivity extends Activity
 					refresh();
 				}
 			}
-
 			@Override
 			public void onConfigurationChanged(Configuration newConfig) {
 				super.onConfigurationChanged(newConfig);
-				// GalePress integration: manage layout of custom views on orientation change
-				if (mOrientation != newConfig.orientation) {
+			// GalePress integration: manage layout of custom views on orientation change
+				if (mOrientation != newConfig.orientation && deviceType) {
 					relayoutCustomViews(mCurrent);
 					displayPages = newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE ? DisplayPages.TWO : DisplayPages.SINGLE;
 					mOrientation = newConfig.orientation;
-				}
+				}else
+					setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 			}
 		};
 		mDocView.setAdapter(new PageAdapter(this, core));
