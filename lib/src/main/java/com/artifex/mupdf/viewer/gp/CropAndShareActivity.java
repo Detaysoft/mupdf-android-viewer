@@ -33,7 +33,7 @@ public class CropAndShareActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.crop_and_share_activity);
 
-        ((RelativeLayout)findViewById(R.id.crop_base)).setBackgroundColor(ThemeColor.getInstance().getThemeColor());
+        findViewById(R.id.crop_base).setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
@@ -53,12 +53,12 @@ public class CropAndShareActivity extends Activity {
             finish();
         }
 
-        cropImageView = (CropImageView) findViewById(R.id.crop_imageview);
+        cropImageView = findViewById(R.id.crop_imageview);
         cropImageView.setGuidelines(1);
         cropImageView.setImageBitmap(bmp);
 
 
-        Button share = (Button) findViewById(R.id.crop_submit_button);
+        Button share = findViewById(R.id.crop_submit_button);
         share.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -96,7 +96,7 @@ public class CropAndShareActivity extends Activity {
             }
         });
 
-        Button cancel = (Button) findViewById(R.id.crop_cancel_button);
+        Button cancel = findViewById(R.id.crop_cancel_button);
         cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
