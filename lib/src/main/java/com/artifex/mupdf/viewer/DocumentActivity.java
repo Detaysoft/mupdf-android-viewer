@@ -1143,12 +1143,12 @@ public class DocumentActivity extends Activity
 			return;
 
 		if (mSearchMode == SearchMode.App && mPopupSearchEditText != null) {
-			imm.showSoftInput(mPopupSearchEditText, 0);
+			imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,0);
 			return;
 		}
 
 		if (mSearchText != null)
-			imm.showSoftInput(mSearchText, 0);
+			imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,0);
 	}
 
 	private void hideKeyboard() {
@@ -1158,12 +1158,12 @@ public class DocumentActivity extends Activity
 			return;
 
 		if (mSearchMode == SearchMode.App && mPopupSearchEditText != null) {
-			imm.hideSoftInputFromWindow(mPopupSearchEditText.getWindowToken(), 0);
+			imm.hideSoftInputFromWindow(mPopupSearchEditText.getWindowToken(),0);
 			return;
 		}
 
 		if (mSearchText != null) {
-			imm.hideSoftInputFromWindow(mSearchText.getWindowToken(), 0);
+			imm.hideSoftInputFromWindow(mSearchText.getWindowToken(),0);
 		}
 	}
 
