@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 // Make our ImageViews opaque to optimize redraw
-class OpaqueImageView extends android.support.v7.widget.AppCompatImageView {
+class OpaqueImageView extends androidx.appcompat.widget.AppCompatImageView {
 
 	public OpaqueImageView(Context context) {
 		super(context);
