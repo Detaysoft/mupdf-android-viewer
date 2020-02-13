@@ -52,7 +52,7 @@
 			android:label="@string/title_activity_crop"
 			android:theme="@style/ReaderTheme" />
 		<provider
-			android:name="android.support.v4.content.FileProvider"
+			android:name="androidx.core.content.FileProvider"
 			android:authorities="${applicationId}.fileprovider"
 			android:grantUriPermissions="true"
 			android:exported="false">
