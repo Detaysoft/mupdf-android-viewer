@@ -1,52 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+    android:id="@+id/crop_image_layer"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    >
+    android:gravity="center"
+    android:orientation="vertical">
 
-    <RelativeLayout
-        android:id="@+id/crop_base"
+    <com.edmodo.cropper.CropImageView
+        android:id="@+id/crop_imageview"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_weight="4" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:id="@+id/crop_image_layer">
+    <LinearLayout
+        android:id="@+id/crop_submit_layer"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginBottom="5dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="horizontal">
 
-            <com.edmodo.cropper.CropImageView
-                android:id="@+id/crop_imageview"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+        <Button
+            android:id="@+id/crop_cancel_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="5dp"
+            android:background="@drawable/crop_cancel_dark" />
 
-        </LinearLayout>
+        <Button
+            android:id="@+id/crop_submit_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="5dp"
+            android:background="@drawable/crop_submit_dark" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:orientation="horizontal"
-            android:layout_alignParentBottom="true"
-            android:id="@+id/crop_submit_layer"
-            android:layout_marginBottom="10dp"
-            android:gravity="center">
-
-            <Button
-                android:id="@+id/crop_cancel_button"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginRight="20dp"
-                android:background="@drawable/crop_cancel_dark"/>
-
-            <Button
-                android:id="@+id/crop_submit_button"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/crop_submit_dark"/>
-
-        </LinearLayout>
-
-    </RelativeLayout>
+    </LinearLayout>
 
 </LinearLayout>

@@ -32,7 +32,6 @@ public class CropAndShareActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.crop_and_share_activity);
 
-        findViewById(R.id.crop_base).setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
@@ -55,6 +54,7 @@ public class CropAndShareActivity extends Activity {
         cropImageView = findViewById(R.id.crop_imageview);
         cropImageView.setGuidelines(1);
         cropImageView.setImageBitmap(bmp);
+        cropImageView.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
 
         Button share = findViewById(R.id.crop_submit_button);
