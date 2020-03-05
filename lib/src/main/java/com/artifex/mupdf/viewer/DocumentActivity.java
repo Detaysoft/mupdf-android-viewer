@@ -176,17 +176,13 @@ public class DocumentActivity extends Activity
 		{
 			core = new MuPDFCore(path);
 		}
-		catch (Exception e)
+		catch (Exception | OutOfMemoryError e)
 		{
 			System.out.println(e);
 			return null;
 		}
-		catch (java.lang.OutOfMemoryError e)
-		{
-			//  out of memory is not an Exception, so we catch it separately.
-			System.out.println(e);
-			return null;
-		}
+		//  out of memory is not an Exception, so we catch it separately.
+
 		return core;
 	}
 
@@ -206,7 +202,7 @@ public class DocumentActivity extends Activity
 	}
 
 	/** Called when the activity is first created. */
-	@SuppressLint("StaticFieldLeak")
+	@SuppressLint({"StaticFieldLeak", "SourceLockedOrientationActivity"})
 	@Override
 	public void onCreate(final Bundle savedInstanceState)
 	{
@@ -517,6 +513,7 @@ public class DocumentActivity extends Activity
 					refresh();
 				}
 			}
+			@SuppressLint("SourceLockedOrientationActivity")
 			@Override
 			public void onConfigurationChanged(Configuration newConfig) {
 				super.onConfigurationChanged(newConfig);
@@ -1223,9 +1220,6 @@ public class DocumentActivity extends Activity
 			b.compress(Bitmap.CompressFormat.PNG, 90, fos);
 			fos.flush();
 			fos.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return false;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return false;

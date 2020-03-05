@@ -95,7 +95,7 @@ public class GPAnnotationInfo {
                 location.setLatitude(lat);
                 location.setLongitude(lon);
                 Double zoomValue = Double.valueOf(uri.getQueryParameter("slon"));
-                float zoomlevel = 12 - (int)(zoomValue / new Double("0.01"));
+                float zoomlevel = 12 - (int)(zoomValue / Double.parseDouble("0.01"));
                 zoom = (zoomlevel / 2) + 12;
                 if(url.contains("standard")){
                     mapType = MAP_TYPE_STANDART;

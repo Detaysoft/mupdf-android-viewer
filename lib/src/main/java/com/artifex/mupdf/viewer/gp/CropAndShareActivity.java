@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer.gp;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -27,6 +28,7 @@ public class CropAndShareActivity extends Activity {
     private Bitmap bmp;
     private CropImageView cropImageView;
 
+    @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

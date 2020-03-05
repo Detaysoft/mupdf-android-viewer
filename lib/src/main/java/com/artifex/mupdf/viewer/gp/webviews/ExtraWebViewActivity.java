@@ -3,7 +3,6 @@ package com.artifex.mupdf.viewer.gp.webviews;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;

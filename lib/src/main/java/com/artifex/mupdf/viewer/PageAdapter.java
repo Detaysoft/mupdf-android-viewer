@@ -14,7 +14,7 @@ import android.os.AsyncTask;
 public class PageAdapter extends BaseAdapter {
 	private final Context mContext;
 	private final MuPDFCore mCore;
-	private final SparseArray<PointF> mPageSizes = new SparseArray<PointF>();
+	private final SparseArray<PointF> mPageSizes = new SparseArray<>();
 	private       Bitmap mSharedHqBm;
 
 	PageAdapter(Context c, MuPDFCore core) {

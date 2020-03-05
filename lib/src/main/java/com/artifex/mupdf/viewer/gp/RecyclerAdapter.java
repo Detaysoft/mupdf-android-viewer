@@ -109,7 +109,7 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.MyView
     private void startAnimation(final MyViewHolder view ){
         /**Animasyon sürekli tetiklendiği için listener yerine withEndAction kullanıldı. p1597*/
         view.previewImage.animate().alpha(0.6f).setDuration(300).
-                translationY(view.previewImage.getHeight()/8)
+                translationY((float)view.previewImage.getHeight()/8)
                 .withEndAction(new Runnable() {
                     @Override
                     public void run() {
