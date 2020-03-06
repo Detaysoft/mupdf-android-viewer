@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import androidx.core.content.FileProvider;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
 import android.widget.Button;
 import android.widget.Toast;
 import com.artifex.mupdf.viewer.R;
@@ -27,6 +28,7 @@ public class CropAndShareActivity extends Activity {
 
     private Bitmap bmp;
     private CropImageView cropImageView;
+    private AlphaAnimation buttonClick = new AlphaAnimation(1F, 0.5F);
 
     @SuppressLint("SourceLockedOrientationActivity")
     @Override
@@ -63,6 +65,7 @@ public class CropAndShareActivity extends Activity {
         share.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                v.startAnimation(buttonClick);
                 // save bitmap to cache directory
                 try {
 
@@ -101,6 +104,7 @@ public class CropAndShareActivity extends Activity {
         cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                v.startAnimation(buttonClick);
                 finish();
             }
         });
