@@ -19,24 +19,13 @@ class Stepper {
 	void prod() {
 		if (!mPending) {
 			mPending = true;
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-				mPoster.postOnAnimation(new Runnable() {
-					@Override
-					public void run() {
-						mPending = false;
-						mTask.run();
-					}
-				});
-			} else {
-				mPoster.post(new Runnable() {
-					@Override
-					public void run() {
-						mPending = false;
-						mTask.run();
-					}
-				});
-
-			}
+			mPoster.postOnAnimation(new Runnable() {
+				@Override
+				public void run() {
+					mPending = false;
+					mTask.run();
+				}
+			});
 		}
 	}
 }

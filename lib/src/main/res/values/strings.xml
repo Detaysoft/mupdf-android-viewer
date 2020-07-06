@@ -25,5 +25,5 @@
 	<string name="toggle_reflow_mode">Toggle reflow mode</string>
 	<string name="outline_title">Table of Contents</string>
 	<string name="more">More</string>
-
+	<bool name="isTablet">false</bool>
 </resources>

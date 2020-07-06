@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer.gp;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -8,10 +9,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.content.FileProvider;
+import androidx.core.content.FileProvider;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
 import android.widget.Button;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 import com.artifex.mupdf.viewer.R;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
@@ -27,13 +28,14 @@ public class CropAndShareActivity extends Activity {
 
     private Bitmap bmp;
     private CropImageView cropImageView;
+    private AlphaAnimation buttonClick = new AlphaAnimation(1F, 0.5F);
 
+    @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.crop_and_share_activity);
 
-        ((RelativeLayout)findViewById(R.id.crop_base)).setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
@@ -53,15 +55,17 @@ public class CropAndShareActivity extends Activity {
             finish();
         }
 
-        cropImageView = (CropImageView) findViewById(R.id.crop_imageview);
+        cropImageView = findViewById(R.id.crop_imageview);
         cropImageView.setGuidelines(1);
         cropImageView.setImageBitmap(bmp);
+        cropImageView.setBackgroundColor(ThemeColor.getInstance().getThemeColor());
 
 
-        Button share = (Button) findViewById(R.id.crop_submit_button);
+        Button share = findViewById(R.id.crop_submit_button);
         share.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                v.startAnimation(buttonClick);
                 // save bitmap to cache directory
                 try {
 
@@ -96,10 +100,11 @@ public class CropAndShareActivity extends Activity {
             }
         });
 
-        Button cancel = (Button) findViewById(R.id.crop_cancel_button);
+        Button cancel = findViewById(R.id.crop_cancel_button);
         cancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                v.startAnimation(buttonClick);
                 finish();
             }
         });

@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 // Make our ImageViews opaque to optimize redraw
-class OpaqueImageView extends android.support.v7.widget.AppCompatImageView {
+class OpaqueImageView extends androidx.appcompat.widget.AppCompatImageView {
 
 	public OpaqueImageView(Context context) {
 		super(context);
@@ -341,7 +341,7 @@ public class PageView extends ViewGroup {
 	}
 
 	public ArrayList<View> getGPAnnotations(PageView pageView) {
-		ArrayList<View> gpAnnotations = new ArrayList<View>();
+		ArrayList<View> gpAnnotations = new ArrayList<>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
 			View view = pageView.getChildAt(i);
 			if (view instanceof WebView) {
@@ -353,7 +353,7 @@ public class PageView extends ViewGroup {
 
 
 	public ArrayList<View> getGPCustomProgress(PageView pageView) {
-		ArrayList<View> gpprogress = new ArrayList<View>();
+		ArrayList<View> gpprogress = new ArrayList<>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
 			View view = pageView.getChildAt(i);
 			if (view instanceof CustomPulseProgress) {
@@ -364,7 +364,7 @@ public class PageView extends ViewGroup {
 	}
 
 	public ArrayList<View> getGPModals(PageView pageView) {
-		ArrayList<View> modals = new ArrayList<View>();
+		ArrayList<View> modals = new ArrayList<>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
 			View view = pageView.getChildAt(i);
 			if (view.getTag() != null && view.getTag().toString().compareTo("modal") == 0) {
@@ -375,7 +375,7 @@ public class PageView extends ViewGroup {
 	}
 
 	public ArrayList<View> getGPPageLinks(PageView pageView) {
-		ArrayList<View> modals = new ArrayList<View>();
+		ArrayList<View> modals = new ArrayList<>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
 			View view = pageView.getChildAt(i);
 			if (view.getTag() != null && view.getTag().toString().compareTo("pagelink") == 0) {
@@ -386,7 +386,7 @@ public class PageView extends ViewGroup {
 	}
 
 	public ArrayList<View> getGPWebLinks(PageView pageView) {
-		ArrayList<View> modals = new ArrayList<View>();
+		ArrayList<View> modals = new ArrayList<>();
 		for (int i = 0; i < pageView.getChildCount(); i++) {
 			View view = pageView.getChildAt(i);
 			if (view.getTag() != null && view.getTag().toString().compareTo("weblink") == 0) {
@@ -743,8 +743,8 @@ public class PageView extends ViewGroup {
 						  if (pageView.mGPLinks != null) {
 							  for (GPAnnotationInfo link : pageView.mGPLinks) {
                                   if (link.webViewId == view.getId()) {
-                                      original_x = (link.muPdfLink.bounds.x0 + link.muPdfLink.bounds.x1) / 2 * pageView.mSourceScale - progressSize / 2;
-                                      original_y = (link.muPdfLink.bounds.y0 + link.muPdfLink.bounds.y1) / 2 * pageView.mSourceScale - progressSize / 2;
+                                      original_x = (link.muPdfLink.bounds.x0 + link.muPdfLink.bounds.x1) / 2 * pageView.mSourceScale - (float)progressSize / 2;
+                                      original_y = (link.muPdfLink.bounds.y0 + link.muPdfLink.bounds.y1) / 2 * pageView.mSourceScale - (float)progressSize / 2;
 									  progress.setPivotX(0);
 									  progress.setPivotY(0);
 									  progress.setX(original_x * w / (float) mSize.x);

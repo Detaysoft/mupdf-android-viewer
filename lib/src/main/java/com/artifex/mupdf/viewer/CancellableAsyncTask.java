@@ -69,13 +69,7 @@ public class CancellableAsyncTask<Params, Result>
 		{
 			this.asyncTask.get();
 		}
-		catch (InterruptedException e)
-		{
-		}
-		catch (ExecutionException e)
-		{
-		}
-		catch (CancellationException e)
+		catch (InterruptedException | ExecutionException | CancellationException ignored)
 		{
 		}
 	}

@@ -9,6 +9,7 @@ import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -20,11 +21,11 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
@@ -162,6 +163,7 @@ public class DocumentActivity extends Activity
 
 	// GP orientation
 	private int mOrientation;
+	private boolean deviceType;
 
 	private MuPDFCore openFile(String path)
 	{
@@ -174,17 +176,13 @@ public class DocumentActivity extends Activity
 		{
 			core = new MuPDFCore(path);
 		}
-		catch (Exception e)
+		catch (Exception | OutOfMemoryError e)
 		{
 			System.out.println(e);
 			return null;
 		}
-		catch (java.lang.OutOfMemoryError e)
-		{
-			//  out of memory is not an Exception, so we catch it separately.
-			System.out.println(e);
-			return null;
-		}
+		//  out of memory is not an Exception, so we catch it separately.
+
 		return core;
 	}
 
@@ -204,7 +202,7 @@ public class DocumentActivity extends Activity
 	}
 
 	/** Called when the activity is first created. */
-	@SuppressLint("StaticFieldLeak")
+	@SuppressLint({"StaticFieldLeak", "SourceLockedOrientationActivity"})
 	@Override
 	public void onCreate(final Bundle savedInstanceState)
 	{
@@ -217,6 +215,9 @@ public class DocumentActivity extends Activity
 
 		// GP Orientation
 		mOrientation = getResources().getConfiguration().orientation;
+		deviceType = getResources().getBoolean(R.bool.isTablet);
+		if(!deviceType)
+			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
 		DisplayMetrics metrics = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics(metrics);
@@ -512,16 +513,17 @@ public class DocumentActivity extends Activity
 					refresh();
 				}
 			}
-
+			@SuppressLint("SourceLockedOrientationActivity")
 			@Override
 			public void onConfigurationChanged(Configuration newConfig) {
 				super.onConfigurationChanged(newConfig);
-				// GalePress integration: manage layout of custom views on orientation change
-				if (mOrientation != newConfig.orientation) {
+			// GalePress integration: manage layout of custom views on orientation change
+				if (mOrientation != newConfig.orientation && deviceType) {
 					relayoutCustomViews(mCurrent);
 					displayPages = newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE ? DisplayPages.TWO : DisplayPages.SINGLE;
 					mOrientation = newConfig.orientation;
-				}
+				}else
+					setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 			}
 		};
 		mDocView.setAdapter(new PageAdapter(this, core));
@@ -1138,12 +1140,12 @@ public class DocumentActivity extends Activity
 			return;
 
 		if (mSearchMode == SearchMode.App && mPopupSearchEditText != null) {
-			imm.showSoftInput(mPopupSearchEditText, 0);
+			imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,0);
 			return;
 		}
 
 		if (mSearchText != null)
-			imm.showSoftInput(mSearchText, 0);
+			imm.toggleSoftInput(InputMethodManager.SHOW_FORCED,0);
 	}
 
 	private void hideKeyboard() {
@@ -1153,12 +1155,12 @@ public class DocumentActivity extends Activity
 			return;
 
 		if (mSearchMode == SearchMode.App && mPopupSearchEditText != null) {
-			imm.hideSoftInputFromWindow(mPopupSearchEditText.getWindowToken(), 0);
+			imm.hideSoftInputFromWindow(mPopupSearchEditText.getWindowToken(),0);
 			return;
 		}
 
 		if (mSearchText != null) {
-			imm.hideSoftInputFromWindow(mSearchText.getWindowToken(), 0);
+			imm.hideSoftInputFromWindow(mSearchText.getWindowToken(),0);
 		}
 	}
 
@@ -1218,9 +1220,6 @@ public class DocumentActivity extends Activity
 			b.compress(Bitmap.CompressFormat.PNG, 90, fos);
 			fos.flush();
 			fos.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-			return false;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return false;
