@@ -146,5 +146,3 @@ uploadArchives repository in build.gradle before running the uploadArchives
 task.
 
 	$ ./gradlew uploadArchives
-
-Good Luck!
