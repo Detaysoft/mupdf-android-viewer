@@ -5,6 +5,7 @@ import com.artifex.mupdf.fitz.Link;
 import com.artifex.mupdf.fitz.Quad;
 import com.artifex.mupdf.viewer.gp.models.GPAnnotationInfo;
 import com.artifex.mupdf.viewer.gp.CustomPulseProgress;
+import com.artifex.mupdf.viewer.gp.util.ModuleConfig;
 import com.artifex.mupdf.viewer.gp.webviews.ExtraWebViewActivity;
 import com.artifex.mupdf.viewer.gp.webviews.ViewAnnotation;
 import com.artifex.mupdf.viewer.gp.webviews.WebViewAnnotation;
@@ -574,9 +575,10 @@ public class PageView extends ViewGroup {
 			else if((link.componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_MAP) ){
 				// Map Annotations
 				// http://adem.me/map/index.html?lat=41.033621&lon=28.952785&zoom=16&w=400&h=300&mapType=0
+				String authority = !ModuleConfig.isTest ? "www.galepress.com" : "test.galepress.com";
 				Uri.Builder builder = new Uri.Builder();
 				builder.scheme("http");
-				builder.authority("www.galepress.com");
+				builder.authority(authority);
 				builder.appendPath("files");
 				builder.appendPath("map_html");
 				builder.appendPath("index.html");
