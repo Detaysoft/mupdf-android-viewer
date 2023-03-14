@@ -539,15 +539,14 @@ public class PageView extends ViewGroup {
 					modalButton.setBackgroundColor(Color.TRANSPARENT);
 					modalButton.setTag("modal");
 					modalButton.setOnClickListener(new OnClickListener() {
-						@Override
-						public void onClick(View v) {
-							Intent intent = new Intent(mContext, ExtraWebViewActivity.class);
-							intent.putExtra("url", link.getSourceUrlPath(mContext)); // daha once linkInfoExternal.sourceurl vardi o nedenle modal acilmiyordu
-							intent.putExtra("isModal", true);
-							mContext.startActivity(intent);
-						}
-					});
-					addView(modalButton);
+                        @Override
+                        public void onClick(View v) {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setData(Uri.parse(link.url));
+                            mContext.startActivity(intent);
+                        }
+                    });
+                    addView(modalButton);
 				}
 				else{
 					String url = link.getSourceUrlPath(mContext);
@@ -611,30 +610,28 @@ public class PageView extends ViewGroup {
 				view.setTag("weblink");
 				view.readerView = ((DocumentActivity) mContext).getReaderView();
 				view.setOnClickListener(new OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						if(isMailto) {
-							Intent intent = new Intent(Intent.ACTION_SEND);
-							intent.setType("message/rfc822");
-							//intent.setType("text/html");
-							intent.putExtra(Intent.EXTRA_EMAIL, new String[]{link.url});
-							intent.putExtra(Intent.EXTRA_SUBJECT, " ");
-							intent.putExtra(Intent.EXTRA_TEXT, " ");
-							try {
-								mContext.startActivity(Intent.createChooser(intent, "Send mail..."));
-							} catch (android.content.ActivityNotFoundException ex) {
-								Toast.makeText(mContext, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
-							}
-						} else {
-							Intent intent = new Intent(mContext, ExtraWebViewActivity.class);
-							intent.putExtra("url",link.url);
-							intent.putExtra("isModal", true);
-							mContext.startActivity(intent);
-						}
-
-					}
-				});
-				addView(view);
+                    @Override
+                    public void onClick(View v) {
+                        if (isMailto) {
+                            Intent intent = new Intent(Intent.ACTION_SEND);
+                            intent.setType("message/rfc822");
+                            //intent.setType("text/html");
+                            intent.putExtra(Intent.EXTRA_EMAIL, new String[]{link.url});
+                            intent.putExtra(Intent.EXTRA_SUBJECT, " ");
+                            intent.putExtra(Intent.EXTRA_TEXT, " ");
+                            try {
+                                mContext.startActivity(Intent.createChooser(intent, "Send mail..."));
+                            } catch (android.content.ActivityNotFoundException ex) {
+                                Toast.makeText(mContext, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setData(Uri.parse(link.url));
+                            mContext.startActivity(intent);
+                        }
+                    }
+                });
+                addView(view);
 			}
 
 			if(!link.isInternal && !link.isModal) {
