@@ -13,7 +13,8 @@
 			android:configChanges="orientation|screenSize|keyboardHidden"
 			android:theme="@style/ReaderTheme"
 			android:hardwareAccelerated="true"
-			android:screenOrientation="sensor">
+			android:screenOrientation="sensor"
+			android:exported="true">
 			<intent-filter tools:ignore="AppLinkUrlError">
 				<action android:name="android.intent.action.VIEW" />
 				<category android:name="android.intent.category.DEFAULT" />
