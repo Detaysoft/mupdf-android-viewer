@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -10,6 +11,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -21,6 +23,9 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -92,6 +97,8 @@ public class DocumentActivity extends Activity
 	enum SearchMode {App, Lib};
 
 	private final int    OUTLINE_REQUEST=0;
+	private final int    PERMISSION_REQUEST=0;
+
 	private MuPDFCore    core;
 	private String       mFileName;
 	private ReaderView   mDocView;
@@ -363,6 +370,8 @@ public class DocumentActivity extends Activity
 				Uri uri = intent.getData();
 				System.out.println("URI to open is: " + uri);
 				if (uri.getScheme().equals("file")) {
+					if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED)
+						ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST);
 					String path = uri.getPath();
 					core = openFile(path);
 				} else {
