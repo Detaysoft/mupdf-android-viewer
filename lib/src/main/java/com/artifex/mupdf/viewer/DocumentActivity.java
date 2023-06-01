@@ -6,8 +6,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
@@ -23,14 +23,6 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
@@ -62,8 +54,17 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
-import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
+
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.artifex.mupdf.viewer.gp.CropAndShareActivity;
+import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
 import com.artifex.mupdf.viewer.gp.OutlineAdapter;
 import com.artifex.mupdf.viewer.gp.RecyclerAdapter;
 import com.artifex.mupdf.viewer.gp.models.GPContent;
@@ -72,13 +73,14 @@ import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 import com.artifex.mupdf.viewer.gp.util.ThemeFont;
 import com.artifex.mupdf.viewer.gp.util.ThemeIcon;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -86,6 +88,7 @@ import java.util.Locale;
 
 public class DocumentActivity extends Activity
 {
+	private final String APP = "MuPDF";
 	public final static String EXTRA_THEME_TYPE = "themeType";
 	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
 	/* The core rendering instance */
@@ -98,16 +101,14 @@ public class DocumentActivity extends Activity
 	enum SearchMode {App, Lib};
 
 	private final int    OUTLINE_REQUEST=0;
-	private final int    PERMISSION_REQUEST=0;
-
 	private MuPDFCore    core;
-	private String       mFileName;
-	private String       mFileKey;
+	private String		 mDocTitle;
+	private String       mDocKey;
 	private ReaderView   mDocView;
 	private View         mButtonsView;
 	private boolean      mButtonsVisible;
 	private EditText     mPasswordView;
-	private TextView     mFilenameView;
+	private TextView 	 mDocNameView;
 	private ImageButton  mSearchButton;
 	private ImageButton  mOutlineButton;
 	private ImageButton  mShareButton;
@@ -180,34 +181,13 @@ public class DocumentActivity extends Activity
 			builder.append(String.format("%02x", b));
 		return builder.toString();
 	}
-	private MuPDFCore openFile(String path)
-	{
-		int lastSlashPos = path.lastIndexOf('/');
-		mFileName = lastSlashPos == -1
-				? path
-				: path.substring(lastSlashPos + 1);
-		System.out.println("Trying to open " + path);
-		try
-		{
-			mFileKey = mFileName;
-			core = new MuPDFCore(path);
-		}
-		catch (Exception | OutOfMemoryError e)
-		{
-			System.out.println(e);
-			return null;
-		}
-		//  out of memory is not an Exception, so we catch it separately.
-
-		return core;
-	}
 
 	private MuPDFCore openBuffer(byte[] buffer, String magic)
 	{
 		System.out.println("Trying to open byte buffer");
 		try
 		{
-			mFileKey = toHex(MessageDigest.getInstance("MD5").digest(buffer));
+			mDocKey = toHex(MessageDigest.getInstance("MD5").digest(buffer));
 			core = new MuPDFCore(buffer, magic);
 		}
 		catch (Exception e)
@@ -321,8 +301,8 @@ public class DocumentActivity extends Activity
 
 	private void prepareDocument(Bundle savedInstanceState) {
 		if (core == null) {
-			if (savedInstanceState != null && savedInstanceState.containsKey("FileName")) {
-				mFileName = savedInstanceState.getString("FileName");
+			if (savedInstanceState != null && savedInstanceState.containsKey("DocTitle")) {
+				mDocTitle = savedInstanceState.getString("DocTitle");
 			}
 		}
 
@@ -378,40 +358,43 @@ public class DocumentActivity extends Activity
 
 			if (Intent.ACTION_VIEW.equals(intent.getAction())) {
 				Uri uri = intent.getData();
-				System.out.println("URI to open is: " + uri);
-				if (uri.getScheme().equals("file")) {
-					if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED)
-						ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST);
-					String path = uri.getPath();
-					core = openFile(path);
-				} else {
-					try {
-						InputStream is = getContentResolver().openInputStream(uri);
-						int len;
-						ByteArrayOutputStream bufferStream = new ByteArrayOutputStream();
-						byte[] data = new byte[16384];
-						while ((len = is.read(data, 0, data.length)) != -1) {
-							bufferStream.write(data, 0, len);
-						}
-						bufferStream.flush();
-						buffer = bufferStream.toByteArray();
-						is.close();
-					}
-					catch (IOException e) {
-						String reason = e.toString();
-						Resources res = getResources();
-						AlertDialog alert = mAlertBuilder.create();
-						setTitle(String.format(Locale.ROOT, res.getString(R.string.cannot_open_document_Reason), reason));
-						alert.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss),
-								new DialogInterface.OnClickListener() {
-									public void onClick(DialogInterface dialog, int which) {
-										finish();
-									}
-								});
-						alert.show();
-						return;
-					}
-					core = openBuffer(buffer, intent.getType());
+				String mimetype = intent.getType();
+				if (mimetype == null || mimetype.equals("application/octet-stream"))
+					mimetype = uri.getLastPathSegment();
+
+				mDocKey = uri.toString();
+				mDocTitle = uri.getLastPathSegment();
+
+				Log.i(APP, "URI " + uri.toString());
+				Log.i(APP, "MAGIC " + mimetype);
+				Log.i(APP, "TITLE " + mDocTitle);
+
+				try {
+					InputStream stm = getContentResolver().openInputStream(uri);
+					ByteArrayOutputStream out = new ByteArrayOutputStream();
+					byte[] buf = new byte[16384];
+					int n;
+					while ((n = stm.read(buf)) != -1)
+						out.write(buf, 0, n);
+					out.flush();
+					buffer = out.toByteArray();
+					mDocKey = toHex(MessageDigest.getInstance("MD5").digest(buffer));
+					Log.i(APP, "BUFFER " + buffer.length + " " + mDocKey);
+
+					core = openBuffer(buffer, mimetype);
+				} catch (IOException | NoSuchAlgorithmException x) {
+					String reason = x.toString();
+					Resources res = getResources();
+					AlertDialog alert = mAlertBuilder.create();
+					setTitle(String.format(Locale.ROOT, res.getString(R.string.cannot_open_document_Reason), reason));
+					alert.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss),
+							new DialogInterface.OnClickListener() {
+								public void onClick(DialogInterface dialog, int which) {
+									finish();
+								}
+							});
+					alert.show();
+					return;
 				}
 				SearchTaskResult.set(null);
 			}
@@ -569,9 +552,9 @@ public class DocumentActivity extends Activity
 		// Set the file-name text
 		String docTitle = core.getTitle();
 		if (docTitle != null)
-			mFilenameView.setText(docTitle);
+			mDocNameView.setText(docTitle);
 		else
-			mFilenameView.setText(mFileName);
+			mDocNameView.setText(mDocTitle);
 
 		//---------- GalePress recycle page preview [Start]
 
@@ -647,7 +630,7 @@ public class DocumentActivity extends Activity
 		if(content !=null){
 			mDocView.setDisplayedViewIndex(prefs.getInt("page" + getContentId(), 0));
 		}else{
-			mDocView.setDisplayedViewIndex(prefs.getInt("page" + mFileName, 0));
+			mDocView.setDisplayedViewIndex(prefs.getInt("page" + mDocTitle, 0));
 		}
 
 
@@ -843,16 +826,16 @@ public class DocumentActivity extends Activity
 
 		mOrientation = getResources().getConfiguration().orientation;
 
-		if (mFileKey != null && mDocView != null) {
-			if (mFileName != null)
-				outState.putString("FileName", mFileName);
+		if (mDocKey != null && mDocView != null) {
+			if (mDocTitle != null)
+				outState.putString("FileName", mDocTitle);
 			// Store current page in the prefs against the file name,
 			// so that we can pick it up each time the file is loaded
 			// Other info is needed only for screen-orientation change,
 			// so it can go in the bundle
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
-			edit.putInt("page"+mFileKey, mDocView.getDisplayedViewIndex());
+			edit.putInt("page"+mDocKey, mDocView.getDisplayedViewIndex());
 			edit.apply();
 		}
 		if (!mButtonsVisible)
@@ -868,7 +851,7 @@ public class DocumentActivity extends Activity
 
 		if (mSearchTask != null)
 			mSearchTask.stop();
-		if (mFileKey != null && mDocView != null) {
+		if (mDocKey != null && mDocView != null) {
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
 			if(content !=null){
@@ -1105,7 +1088,7 @@ public class DocumentActivity extends Activity
 
 	private void makeButtonsView() {
 		mButtonsView = getLayoutInflater().inflate(R.layout.document_activity, null);
-		mFilenameView = mButtonsView.findViewById(R.id.docNameText);
+		mDocNameView = mButtonsView.findViewById(R.id.docNameText);
 		mRecyclerPagePreview = mButtonsView.findViewById(R.id.recyclerPagePreview); // GP recycler view
 		mSearchButton = mButtonsView.findViewById(R.id.searchButton);
 		mOutlineButton = mButtonsView.findViewById(R.id.outlineButton);

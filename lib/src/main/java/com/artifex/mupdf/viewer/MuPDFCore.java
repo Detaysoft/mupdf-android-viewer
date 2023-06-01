@@ -34,14 +34,6 @@ public class MuPDFCore
 	private int layoutH = 504;
 	private int layoutEM = 10;
 
-	MuPDFCore(String filename) {
-		doc = Document.openDocument(filename);
-		doc.layout(layoutW, layoutH, layoutEM);
-		pageCount = doc.countPages();
-		resolution = 160;
-		currentPage = -1;
-	}
-
 	MuPDFCore(byte[] buffer, String magic) {
 		doc = Document.openDocument(buffer, magic);
 		doc.layout(layoutW, layoutH, layoutEM);
