@@ -426,7 +426,10 @@ public class DocumentActivity extends Activity
 			if (Intent.ACTION_VIEW.equals(intent.getAction())) {
 				Uri uri = intent.getData();
 				String mimetype = getIntent().getType();
-
+				if (uri == null)  {
+					showCannotOpenDialog("No document uri to open");
+					return;
+				}
 				mDocKey = uri.toString();
 
 				Log.i(APP, "OPEN URI " + uri.toString());
