@@ -78,6 +78,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -101,6 +102,7 @@ public class DocumentActivity extends Activity
 
 	private MuPDFCore    core;
 	private String       mFileName;
+	private String       mFileKey;
 	private ReaderView   mDocView;
 	private View         mButtonsView;
 	private boolean      mButtonsVisible;
@@ -172,6 +174,12 @@ public class DocumentActivity extends Activity
 	private int mOrientation;
 	private boolean deviceType;
 
+	private String toHex(byte[] digest) {
+		StringBuilder builder = new StringBuilder(2 * digest.length);
+		for (byte b : digest)
+			builder.append(String.format("%02x", b));
+		return builder.toString();
+	}
 	private MuPDFCore openFile(String path)
 	{
 		int lastSlashPos = path.lastIndexOf('/');
@@ -181,6 +189,7 @@ public class DocumentActivity extends Activity
 		System.out.println("Trying to open " + path);
 		try
 		{
+			mFileKey = mFileName;
 			core = new MuPDFCore(path);
 		}
 		catch (Exception | OutOfMemoryError e)
@@ -198,6 +207,7 @@ public class DocumentActivity extends Activity
 		System.out.println("Trying to open byte buffer");
 		try
 		{
+			mFileKey = toHex(MessageDigest.getInstance("MD5").digest(buffer));
 			core = new MuPDFCore(buffer, magic);
 		}
 		catch (Exception e)
@@ -833,15 +843,16 @@ public class DocumentActivity extends Activity
 
 		mOrientation = getResources().getConfiguration().orientation;
 
-		if (mFileName != null && mDocView != null) {
-			outState.putString("FileName", mFileName);
+		if (mFileKey != null && mDocView != null) {
+			if (mFileName != null)
+				outState.putString("FileName", mFileName);
 			// Store current page in the prefs against the file name,
 			// so that we can pick it up each time the file is loaded
 			// Other info is needed only for screen-orientation change,
 			// so it can go in the bundle
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
-			edit.putInt("page"+mFileName, mDocView.getDisplayedViewIndex());
+			edit.putInt("page"+mFileKey, mDocView.getDisplayedViewIndex());
 			edit.apply();
 		}
 		if (!mButtonsVisible)
@@ -857,7 +868,7 @@ public class DocumentActivity extends Activity
 
 		if (mSearchTask != null)
 			mSearchTask.stop();
-		if (mFileName != null && mDocView != null) {
+		if (mFileKey != null && mDocView != null) {
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
 			if(content !=null){
