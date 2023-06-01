@@ -14,6 +14,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -23,6 +24,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
@@ -63,6 +65,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.artifex.mupdf.fitz.SeekableInputStream;
 import com.artifex.mupdf.viewer.gp.CropAndShareActivity;
 import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
 import com.artifex.mupdf.viewer.gp.OutlineAdapter;
@@ -182,17 +185,15 @@ public class DocumentActivity extends Activity
 		return builder.toString();
 	}
 
-	private MuPDFCore openBuffer(byte[] buffer, String magic)
+	private MuPDFCore openStream(SeekableInputStream stm, String magic)
 	{
-		System.out.println("Trying to open byte buffer");
 		try
 		{
-			mDocKey = toHex(MessageDigest.getInstance("MD5").digest(buffer));
-			core = new MuPDFCore(buffer, magic);
+			core = new MuPDFCore(stm, magic);
 		}
 		catch (Exception e)
 		{
-			System.out.println(e);
+			Log.e(APP, "Error opening document: " + e);
 			return null;
 		}
 		return core;
@@ -354,48 +355,48 @@ public class DocumentActivity extends Activity
 
 			//---------- GalePress Integration [End]
 
-			byte[] buffer;
+			SeekableInputStream file;
 
 			if (Intent.ACTION_VIEW.equals(intent.getAction())) {
 				Uri uri = intent.getData();
-				String mimetype = intent.getType();
-				if (mimetype == null || mimetype.equals("application/octet-stream"))
-					mimetype = uri.getLastPathSegment();
+				String mimetype = getIntent().getType();
 
 				mDocKey = uri.toString();
-				mDocTitle = uri.getLastPathSegment();
+				Cursor cursor = getContentResolver().query(uri, null, null, null);
+				cursor.moveToFirst();
+				mDocTitle = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+				long size = cursor.getLong(cursor.getColumnIndex(OpenableColumns.SIZE));
+				if (size == 0)
+					size = -1;
 
-				Log.i(APP, "URI " + uri.toString());
-				Log.i(APP, "MAGIC " + mimetype);
-				Log.i(APP, "TITLE " + mDocTitle);
+				Log.i(APP, "OPEN URI " + uri.toString());
+				Log.i(APP, "  NAME " + mDocTitle);
+				Log.i(APP, "  SIZE " + size);
+
+				Log.i(APP, "  MAGIC (Intent) " + mimetype);
+				if (mimetype == null || mimetype.equals("application/octet-stream")) {
+					mimetype = getContentResolver().getType(uri);
+					Log.i(APP, "  MAGIC (Resolved) " + mimetype);
+				}
+				if (mimetype == null || mimetype.equals("application/octet-stream")) {
+					mimetype = mDocTitle;
+					Log.i(APP, "  MAGIC (Filename) " + mimetype);
+				}
+
 
 				try {
-					InputStream stm = getContentResolver().openInputStream(uri);
-					ByteArrayOutputStream out = new ByteArrayOutputStream();
-					byte[] buf = new byte[16384];
-					int n;
-					while ((n = stm.read(buf)) != -1)
-						out.write(buf, 0, n);
-					out.flush();
-					buffer = out.toByteArray();
-					mDocKey = toHex(MessageDigest.getInstance("MD5").digest(buffer));
-					Log.i(APP, "BUFFER " + buffer.length + " " + mDocKey);
-
-					core = openBuffer(buffer, mimetype);
-				} catch (IOException | NoSuchAlgorithmException x) {
+					file = new SeekableInputStreamWrapper(getContentResolver().openInputStream(uri), size);
+				} catch (IOException x) {
 					String reason = x.toString();
 					Resources res = getResources();
 					AlertDialog alert = mAlertBuilder.create();
 					setTitle(String.format(Locale.ROOT, res.getString(R.string.cannot_open_document_Reason), reason));
 					alert.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss),
-							new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog, int which) {
-									finish();
-								}
-							});
+							(dialog, which) -> finish());
 					alert.show();
 					return;
 				}
+				core = openStream(file, mimetype);
 				SearchTaskResult.set(null);
 			}
 			if (core != null && core.needsPassword()) {
