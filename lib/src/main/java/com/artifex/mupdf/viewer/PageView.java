@@ -23,6 +23,7 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.net.Uri;
+import android.os.FileUriExposedException;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
@@ -52,6 +53,7 @@ class OpaqueImageView extends androidx.appcompat.widget.AppCompatImageView {
 
 @SuppressLint("ViewConstructor")
 public class PageView extends ViewGroup {
+	private final String APP = "MuPDF";
 	private final MuPDFCore mCore;
 
 	private static final int HIGHLIGHT_COLOR = 0x80cc6600;
@@ -890,7 +892,15 @@ public class PageView extends ViewGroup {
 		if (link.isExternal()) {
 			Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(link.getURI()));
 			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET); // API>=21: FLAG_ACTIVITY_NEW_DOCUMENT
-			mContext.startActivity(intent);
+			try {
+				mContext.startActivity(intent);
+			} catch (FileUriExposedException x) {
+				Log.e(APP, x.toString());
+				Toast.makeText(getContext(), "Android does not allow following file:// link: " + link.uri, Toast.LENGTH_LONG).show();
+			} catch (Throwable x) {
+				Log.e(APP, x.toString());
+				Toast.makeText(getContext(), x.getMessage(), Toast.LENGTH_LONG).show();
+			}
 			return 0;
 		} else {
 			return mCore.resolveLink(link);
