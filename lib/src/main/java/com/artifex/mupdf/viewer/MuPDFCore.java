@@ -134,21 +134,23 @@ public class MuPDFCore
 			gotoPage(pageNum);
 
 		if (displayList == null && page != null)
-				displayList = page.toDisplayList();
+			displayList = page.toDisplayList();
+		if (displayList == null || page == null)
+			return;
 
 
-				float zoom = (float)resolution / 72;
-				Matrix ctm = new Matrix(zoom, zoom);
-				RectI bbox = new RectI(page.getBounds().transform(ctm));
-				float xscale = (float)pageW / (float)(bbox.x1-bbox.x0);
-				float yscale = (float)pageH / (float)(bbox.y1-bbox.y0);
-				ctm.scale(xscale, yscale);
+		float zoom = (float) resolution / 72;
+		Matrix ctm = new Matrix(zoom, zoom);
+		RectI bbox = new RectI(page.getBounds().transform(ctm));
+		float xscale = (float) pageW / (float) (bbox.x1 - bbox.x0);
+		float yscale = (float) pageH / (float) (bbox.y1 - bbox.y0);
+		ctm.scale(xscale, yscale);
 
-				AndroidDrawDevice dev = new AndroidDrawDevice(bm, patchX, patchY);
-				displayList.run(dev, ctm, cookie);
-				dev.close();
-				dev.destroy();
-			}
+		AndroidDrawDevice dev = new AndroidDrawDevice(bm, patchX, patchY);
+		displayList.run(dev, ctm, cookie);
+		dev.close();
+		dev.destroy();
+	}
 
 
 
