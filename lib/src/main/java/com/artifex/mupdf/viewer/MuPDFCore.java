@@ -85,29 +85,32 @@ public class MuPDFCore
 	}
 
 	private synchronized void gotoPage(int pageNum) {
-			/* TODO: page cache */
-			if (pageNum > pageCount-1)
-				pageNum = pageCount-1;
-			else if (pageNum < 0)
-				pageNum = 0;
-			if (pageNum != currentPage) {
-				currentPage = pageNum;
-				if (page != null)
-					page.destroy();
-				page = null;
-				if (displayList != null)
-					displayList.destroy();
-				if (doc != null) {
-					page = doc.loadPage(pageNum);
-					Rect b = page.getBounds();
-					pageWidth = b.x1 - b.x0;
-					pageHeight = b.y1 - b.y0;
-				} else {
-					page = null;
-					pageWidth = 0;
-					pageHeight = 0;
-				}
+		/* TODO: page cache */
+		if (pageNum > pageCount-1)
+			pageNum = pageCount-1;
+		else if (pageNum < 0)
+			pageNum = 0;
+		if (pageNum != currentPage) {
+			if (page != null)
+				page.destroy();
+			page = null;
+			if (displayList != null)
+				displayList.destroy();
+			displayList = null;
+			page = null;
+			pageWidth = 0;
+			pageHeight = 0;
+			currentPage = -1;
+
+			if (doc != null) {
+				page = doc.loadPage(pageNum);
+				Rect b = page.getBounds();
+				pageWidth = b.x1 - b.x0;
+				pageHeight = b.y1 - b.y0;
 			}
+
+			currentPage = pageNum;
+		}
 	}
 
 	synchronized PointF getPageSize(int pageNum) {
