@@ -162,6 +162,8 @@ public class DocumentActivity extends Activity
 
 	private AlertDialog.Builder mAlertBuilder;
 	private boolean    mLinkHighlight = false;
+	private boolean mReturnToLibraryActivity = false;
+
 
 
 	protected int mDisplayDPI;
@@ -410,6 +412,8 @@ public class DocumentActivity extends Activity
 
 			SeekableInputStream file;
 
+			mReturnToLibraryActivity = intent.getIntExtra(getComponentName().getPackageName() + ".ReturnToLibraryActivity", 0) != 0;
+
 			if (Intent.ACTION_VIEW.equals(intent.getAction())) {
 				Uri uri = intent.getData();
 				String mimetype = getIntent().getType();
@@ -452,7 +456,6 @@ public class DocumentActivity extends Activity
 					core = openCore(uri, size, mimetype);
 					SearchTaskResult.set(null);
 				} catch (Exception x) {
-					Log.e(APP, Log.getStackTraceString(x));
 					String reason = x.toString();
 					Resources res = getResources();
 					AlertDialog alert = mAlertBuilder.create();

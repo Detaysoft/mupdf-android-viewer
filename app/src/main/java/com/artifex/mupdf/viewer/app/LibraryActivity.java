@@ -44,6 +44,7 @@ public class LibraryActivity extends Activity {
                 intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
                 intent.setAction(Intent.ACTION_VIEW);
                 intent.setDataAndType(data.getData(), data.getType());
+                intent.putExtra(getComponentName().getPackageName() + ".ReturnToLibraryActivity", 1);
                 intent.putExtra(DocumentActivity.EXTRA_THEME_TYPE, ThemeColor.DARK_THEME_TYPE);
                 intent.putExtra(DocumentActivity.EXTRA_FOREGROUND_THEME_COLOR, "#fc4a6a");
                 startActivity(intent);
