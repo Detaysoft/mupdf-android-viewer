@@ -76,7 +76,11 @@ public class PageAdapter extends BaseAdapter {
 			@SuppressLint("StaticFieldLeak") AsyncTask<Void,Void,PointF> sizingTask = new AsyncTask<Void,Void,PointF>() {
 				@Override
 				protected PointF doInBackground(Void... arg0) {
-					return mCore.getPageSize(position);
+					try {
+						return mCore.getPageSize(position);
+					} catch (RuntimeException e) {
+						return null;
+					}
 				}
 
 				@Override
