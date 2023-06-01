@@ -41,6 +41,7 @@ public class LibraryActivity extends Activity {
             if (data != null) {
                 Intent intent = new Intent(this, DocumentActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+                intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
                 intent.setAction(Intent.ACTION_VIEW);
                 intent.setDataAndType(data.getData(), data.getType());
                 intent.putExtra(DocumentActivity.EXTRA_THEME_TYPE, ThemeColor.DARK_THEME_TYPE);
