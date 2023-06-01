@@ -78,7 +78,7 @@ public class PageView extends ViewGroup {
 	private       ImageView mPatch;
 	private       Bitmap    mPatchBm;
 	private       CancellableAsyncTask<Void,Void> mDrawPatch;
-	private       Quad      mSearchBoxes[];
+	private       Quad      mSearchBoxes[][];
 	protected     Link      mLinks[];
 	protected	  ArrayList<GPAnnotationInfo> mGPLinks; // GalePress annotation links
 	private       View      mSearchView;
@@ -280,22 +280,24 @@ public class PageView extends ViewGroup {
 
 					if (!mIsBlank && mSearchBoxes != null) {
 						paint.setColor(HIGHLIGHT_COLOR);
-						for (Quad q : mSearchBoxes) {
-							@SuppressLint("DrawAllocation") Path path = new Path();
-							path.moveTo(q.ul_x * scale, q.ul_y * scale);
-							path.lineTo(q.ll_x * scale, q.ll_y * scale);
-							path.lineTo(q.lr_x * scale, q.lr_y * scale);
-							path.lineTo(q.ur_x * scale, q.ur_y * scale);
-							path.close();
-							canvas.drawPath(path, paint);
+						for (Quad[] searchBox : mSearchBoxes) {
+							for (Quad q : searchBox) {
+								Path path = new Path();
+								path.moveTo(q.ul_x * scale, q.ul_y * scale);
+								path.lineTo(q.ll_x * scale, q.ll_y * scale);
+								path.lineTo(q.lr_x * scale, q.lr_y * scale);
+								path.lineTo(q.ur_x * scale, q.ur_y * scale);
+								path.close();
+								canvas.drawPath(path, paint);
+							}
 						}
 					}
 
 					if (!mIsBlank && mLinks != null && mHighlightLinks) {
 						paint.setColor(LINK_COLOR);
 						for (Link link : mLinks)
-							canvas.drawRect(link.bounds.x0*scale, link.bounds.y0*scale,
-									link.bounds.x1*scale, link.bounds.y1*scale,
+							canvas.drawRect(link.getBounds().x0*scale, link.getBounds().y0*scale,
+									link.getBounds().x1*scale, link.getBounds().y1*scale,
 									paint);
 					}
 				}
@@ -306,7 +308,7 @@ public class PageView extends ViewGroup {
 		requestLayout();
 	}
 
-	public void setSearchBoxes(Quad[] searchBoxes) {
+	public void setSearchBoxes(Quad[][] searchBoxes) {
 		mSearchBoxes = searchBoxes;
 		if (mSearchView != null)
 			mSearchView.invalidate();
@@ -499,10 +501,10 @@ public class PageView extends ViewGroup {
 			final GPAnnotationInfo link = new GPAnnotationInfo(l);
 			mGPLinks.add(link);
 
-			final int left = (int)(l.bounds.x0 * scale);
-			final int top = (int) (l.bounds.y0 * scale);
-			int right = (int) (l.bounds.x1 * scale);
-			int bottom = (int) (l.bounds.y1 * scale);
+			final int left = (int)(l.getBounds().x0 * scale);
+			final int top = (int) (l.getBounds().y0 * scale);
+			int right = (int) (l.getBounds().x1 * scale);
+			int bottom = (int) (l.getBounds().y1 * scale);
 
 			CustomPulseProgress progressBar;
 
@@ -722,8 +724,8 @@ public class PageView extends ViewGroup {
 						if (pageView.mGPLinks != null) {
 							for (GPAnnotationInfo link : pageView.mGPLinks) {
 								if (link.webViewId == view.getId()) {
-									original_x = link.muPdfLink.bounds.x0 * pageView.mSourceScale;
-									original_y = link.muPdfLink.bounds.y0 * pageView.mSourceScale;
+									original_x = link.muPdfLink.getBounds().x0 * pageView.mSourceScale;
+									original_y = link.muPdfLink.getBounds().y0 * pageView.mSourceScale;
 									view.setPivotX(0);
 									view.setPivotY(0);
 									view.setX(original_x * w/(float)mSize.x);
@@ -742,8 +744,8 @@ public class PageView extends ViewGroup {
 						  if (pageView.mGPLinks != null) {
 							  for (GPAnnotationInfo link : pageView.mGPLinks) {
                                   if (link.webViewId == view.getId()) {
-                                      original_x = (link.muPdfLink.bounds.x0 + link.muPdfLink.bounds.x1) / 2 * pageView.mSourceScale - (float)progressSize / 2;
-                                      original_y = (link.muPdfLink.bounds.y0 + link.muPdfLink.bounds.y1) / 2 * pageView.mSourceScale - (float)progressSize / 2;
+                                      original_x = (link.muPdfLink.getBounds().x0 + link.muPdfLink.getBounds().x1) / 2 * pageView.mSourceScale - (float)progressSize / 2;
+                                      original_y = (link.muPdfLink.getBounds().y0 + link.muPdfLink.getBounds().y1) / 2 * pageView.mSourceScale - (float)progressSize / 2;
 									  progress.setPivotX(0);
 									  progress.setPivotY(0);
 									  progress.setX(original_x * w / (float) mSize.x);
@@ -884,7 +886,18 @@ public class PageView extends ViewGroup {
 		return true;
 	}
 
-	public Link hitLink(float x, float y) {
+	public int hitLink(Link link) {
+		if (link.isExternal()) {
+			Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(link.getURI()));
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET); // API>=21: FLAG_ACTIVITY_NEW_DOCUMENT
+			mContext.startActivity(intent);
+			return 0;
+		} else {
+			return mCore.resolveLink(link);
+		}
+	}
+
+	public int hitLink(float x, float y) {
 		// Since link highlighting was implemented, the super class
 		// PageView has had sufficient information to be able to
 		// perform this method directly. Making that change would
@@ -895,9 +908,9 @@ public class PageView extends ViewGroup {
 
 		if (mLinks != null)
 			for (Link l: mLinks)
-				if (l.bounds.contains(docRelX, docRelY))
-					return l;
-		return null;
+				if (l.getBounds().contains(docRelX, docRelY))
+					return hitLink(l);
+		return 0;
 	}
 
 	protected CancellableTaskDefinition<Void, Void> getDrawPageTask(final Bitmap bm, final int sizeX, final int sizeY,

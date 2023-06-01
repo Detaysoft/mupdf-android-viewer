@@ -5,6 +5,7 @@ import android.location.Location;
 import android.net.Uri;
 
 import com.artifex.mupdf.fitz.Link;
+import com.artifex.mupdf.fitz.Rect;
 import com.artifex.mupdf.viewer.DocumentActivity;
 
 public class GPAnnotationInfo {
@@ -42,14 +43,14 @@ public class GPAnnotationInfo {
     public GPAnnotationInfo(Link muPdfLink) {
         this.muPdfLink = muPdfLink;
 
-        if (muPdfLink.uri == null) {
+        if (muPdfLink.getURI() == null) {
             componentAnnotationTypeId = COMPONENT_TYPE_ID_BOOKMARK;
             isInternal = true;
-            internalLinkPageIndex = muPdfLink.page;
+            //internalLinkPageIndex = muPdfLink.get;
             return;
         }
 
-        url = muPdfLink.uri;
+        url = muPdfLink.getURI();
         Uri uri = Uri.parse(url);
 
         if(uri.isHierarchical()) {
