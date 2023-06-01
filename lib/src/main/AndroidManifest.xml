@@ -30,6 +30,7 @@
 				<data android:mimeType="application/vnd.comicbook+zip" />
 				<data android:mimeType="application/epub+zip" />
 				<data android:mimeType="application/x-fictionbook" />
+				<data android:mimeType="application/x-mobipocket-ebook" />
 				<!-- list application/octet-stream to catch the ones android doesn't recognize -->
 				<data android:mimeType="application/octet-stream" />
 				<data android:mimeType="*/*" />
