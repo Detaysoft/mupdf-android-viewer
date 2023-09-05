@@ -574,10 +574,11 @@ public class PageView extends ViewGroup {
 			else if((link.componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_MAP) ){
 				// Map Annotations
 				// http://adem.me/map/index.html?lat=41.033621&lon=28.952785&zoom=16&w=400&h=300&mapType=0
-				String authority = !ModuleConfig.isTest ? "www.galepress.com" : "test.galepress.com";
+				String authority = !ModuleConfig.isTest ? "staging.galepress.com" : "test.galepress.com";
 				Uri.Builder builder = new Uri.Builder();
 				builder.scheme("http");
 				builder.authority(authority);
+				builder.appendPath("api");
 				builder.appendPath("files");
 				builder.appendPath("map_html");
 				builder.appendPath("index.html");

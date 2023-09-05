@@ -3,6 +3,7 @@ package com.artifex.mupdf.viewer.gp.models;
 import android.content.Context;
 import android.location.Location;
 import android.net.Uri;
+import android.util.Log;
 
 import com.artifex.mupdf.fitz.Link;
 import com.artifex.mupdf.viewer.DocumentActivity;
@@ -20,9 +21,9 @@ public class GPAnnotationInfo {
     //public static final int COMPONENT_TYPE_ID_TOOLTIP		=6;
     //public static final int COMPONENT_TYPE_ID_SCROLLER		=7;
     private static final int COMPONENT_TYPE_ID_SLIDESHOW		=8;
-    private static final int COMPONENT_TYPE_ID_360			=9;
-    public static final int COMPONENT_TYPE_ID_BOOKMARK		=10;
-    public static final int COMPONENT_TYPE_ID_ANIMATION		=11;
+    //private static final int COMPONENT_TYPE_ID_360			=9;
+    public static final int COMPONENT_TYPE_ID_BOOKMARK		=9;
+    public static final int COMPONENT_TYPE_ID_ANIMATION		=10;
 
     private static final int  MAP_TYPE_STANDART = 0;
     private static final int  MAP_TYPE_HYBRID = 1;
@@ -119,7 +120,9 @@ public class GPAnnotationInfo {
                         }
                         else{
                             isInternal = false;
-                            sourceUrl = "http://"+url.substring(8);
+                            String a = url.replace("ylweb://staging.galepress.com","https://staging.galepress.com/api");
+                            Log.d("GPAnnotationInfo", "a: " + a);
+                            sourceUrl = a;
                         }
                     } catch (Exception e){ //Url hatalı
                         isInternal = false;
@@ -191,7 +194,7 @@ public class GPAnnotationInfo {
 
     public boolean mustHorizontalScrollLock() {
         return componentAnnotationTypeId != COMPONENT_TYPE_ID_MAP &&
-                componentAnnotationTypeId != COMPONENT_TYPE_ID_360 &&
+                /*componentAnnotationTypeId != COMPONENT_TYPE_ID_360 &&*/
                 componentAnnotationTypeId != COMPONENT_TYPE_ID_SLIDESHOW &&
                 componentAnnotationTypeId != COMPONENT_TYPE_ID_VIDEO;
     }
