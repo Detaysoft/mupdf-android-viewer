@@ -12,6 +12,7 @@ public class GPAnnotationInfo {
     public String url;
     private String sourceUrl;
     public Link muPdfLink;
+    private static String  baseUrlType = "baseUrlType";
 
     public static final int COMPONENT_TYPE_ID_VIDEO 		=1;
     public static final int COMPONENT_TYPE_ID_AUDIO 		=2;
@@ -40,8 +41,9 @@ public class GPAnnotationInfo {
     public boolean isSuitabale = true;
     public int internalLinkPageIndex = 0;
 
-    public GPAnnotationInfo(Link muPdfLink) {
+    public GPAnnotationInfo(Link muPdfLink, String mBaseUrlType) {
         this.muPdfLink = muPdfLink;
+        baseUrlType = mBaseUrlType;
 
         if (muPdfLink.uri == null) {
             componentAnnotationTypeId = COMPONENT_TYPE_ID_BOOKMARK;
@@ -119,10 +121,30 @@ public class GPAnnotationInfo {
                             sourceUrl = url.substring(18);
                         }
                         else{
+                            String currentUrl;
                             isInternal = false;
-                            String a = url.replace("ylweb://staging.galepress.com","https://staging.galepress.com/api");
-                            Log.d("GPAnnotationInfo", "a: " + a);
-                            sourceUrl = a;
+                            switch (baseUrlType) {
+                                case "2":
+                                    if (url.contains("ylweb://www.galepress.com"))
+                                        currentUrl = url.replace("ylweb://www.galepress.com", "https://www.galepress.com/catalog/api");
+                                    else
+                                        currentUrl = url.replace("ylweb", "http");
+                                    break;
+                                case "3":
+                                    if (url.contains("ylweb://www.galepress.com"))
+                                        currentUrl = url.replace("ylweb://www.galepress.com", "https://www.galepress.com/api");
+                                    else
+                                        currentUrl = url.replace("ylweb", "http");
+                                    break;
+                                default:
+                                    if (url.contains("ylweb://www.galepress.com"))
+                                        currentUrl = url.replace("ylweb://www.galepress.com", "https://www.galepress.com");
+                                    else
+                                        currentUrl = url.replace("ylweb", "http");
+                                    break;
+                            }
+                            Log.d("GPAnnotationInfo", "a: " + currentUrl);
+                            sourceUrl = currentUrl;
                         }
                     } catch (Exception e){ //Url hatalı
                         isInternal = false;

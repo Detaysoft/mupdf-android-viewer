@@ -179,7 +179,7 @@ public class PageView extends ViewGroup {
 	}
 
 	@SuppressLint("StaticFieldLeak")
-	public void setPage(int page, PointF size) {
+	public void setPage(int page, PointF size, final String baseUrlType) {
 		// Cancel pending render task
 		if (mDrawEntire != null) {
 			mDrawEntire.cancel();
@@ -224,7 +224,7 @@ public class PageView extends ViewGroup {
 
 			protected void onPostExecute(Link[] v) {
 				mLinks = v;
-				someCoolAnnotationStaff();
+				someCoolAnnotationStaff(baseUrlType);
 				if (mSearchView != null)
 					mSearchView.invalidate();
 			}
@@ -480,7 +480,7 @@ public class PageView extends ViewGroup {
 	/*
 	 * Interaktif iceriklerin sayfaya eklenmesi
 	 * */
-	private void someCoolAnnotationStaff() {
+	private void someCoolAnnotationStaff(String baseUrlType) {
 		/*
 		 * interaktif iceriklerin bilgileri alinana kadar activity'nin kapatilmasi durumu
 		 * ve interaktif iceriklerin varligi kontrol ediliyor.
@@ -496,7 +496,7 @@ public class PageView extends ViewGroup {
 
 		for (Link l : mLinks){
 
-			final GPAnnotationInfo link = new GPAnnotationInfo(l);
+			final GPAnnotationInfo link = new GPAnnotationInfo(l, baseUrlType);
 			mGPLinks.add(link);
 
 			final int left = (int)(l.bounds.x0 * scale);
@@ -574,20 +574,52 @@ public class PageView extends ViewGroup {
 			else if((link.componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_MAP) ){
 				// Map Annotations
 				// http://adem.me/map/index.html?lat=41.033621&lon=28.952785&zoom=16&w=400&h=300&mapType=0
-				String authority = !ModuleConfig.isTest ? "staging.galepress.com" : "test.galepress.com";
+				String authority = !ModuleConfig.isTest ? "www.galepress.com" : "test.galepress.com";
 				Uri.Builder builder = new Uri.Builder();
-				builder.scheme("http");
-				builder.authority(authority);
-				builder.appendPath("api");
-				builder.appendPath("files");
-				builder.appendPath("map_html");
-				builder.appendPath("index.html");
-				builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
-				builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
-				builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
-				builder.appendQueryParameter("w",String.valueOf(right-left));
-				builder.appendQueryParameter("h",String.valueOf(bottom-top));
-				builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+				switch (baseUrlType) {
+					case "1":
+						builder.scheme("https");
+						builder.authority(authority);
+						builder.appendPath("files");
+						builder.appendPath("map_html");
+						builder.appendPath("index.html");
+						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
+						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
+						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
+						builder.appendQueryParameter("w",String.valueOf(right-left));
+						builder.appendQueryParameter("h",String.valueOf(bottom-top));
+						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+						break;
+					case "2":
+						builder.scheme("https");
+						builder.authority(authority);
+						builder.appendPath("catalog");
+						builder.appendPath("api");
+						builder.appendPath("files");
+						builder.appendPath("map_html");
+						builder.appendPath("index.html");
+						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
+						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
+						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
+						builder.appendQueryParameter("w",String.valueOf(right-left));
+						builder.appendQueryParameter("h",String.valueOf(bottom-top));
+						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+						break;
+					case "3":
+						builder.scheme("https");
+						builder.authority(authority);
+						builder.appendPath("api");
+						builder.appendPath("files");
+						builder.appendPath("map_html");
+						builder.appendPath("index.html");
+						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
+						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
+						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
+						builder.appendQueryParameter("w",String.valueOf(right-left));
+						builder.appendQueryParameter("h",String.valueOf(bottom-top));
+						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+						break;
+				}
 				String mapUrl = builder.build().toString();
 
 
