@@ -483,7 +483,7 @@ public class PageView extends ViewGroup {
 	private void someCoolAnnotationStaff(String baseUrlType) {
 		/*
 		 * interaktif iceriklerin bilgileri alinana kadar activity'nin kapatilmasi durumu
-		 * ve interaktif iceriklerin varligi kontrol ediliyor.
+		 * ve Finteraktif iceriklerin varligi kontrol ediliyor.
 		 * */
 		if (mContext == null || mLinks == null)
 			return;
