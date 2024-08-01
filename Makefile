@@ -2,26 +2,28 @@
 
 default: debug
 
-generate:
-	if [ -f jni/Makefile ]; then make -C jni generate; fi
-debug: generate
-	./gradlew assembleDebug
-release: generate
-	./gradlew assembleRelease
-install: generate
-	./gradlew installDebug
+debug:
+	./gradlew --warning-mode=all assembleDebug bundleDebug
+release:
+	./gradlew --warning-mode=all assembleRelease bundleRelease
+install:
+	./gradlew --warning-mode=all installDebug
 lint:
-	./gradlew lint
-archive: generate
-	./gradlew uploadArchives
+	./gradlew --warning-mode=all lint
+archive:
+	./gradlew --warning-mode=all publishReleasePublicationToLocalRepository
 sync: archive
-	rsync -av MAVEN/com/ ghostscript.com:/var/www/maven.ghostscript.com/com/
+	rsync -av --chmod=g+w --chown=:gs-priv $(HOME)/MAVEN/com/ ghostscript.com:/var/www/maven.ghostscript.com/com/
 
 run: install
 	adb shell am start -n com.artifex.mupdf.viewer.app/.LibraryActivity
 
+tarball: release
+	cp app/build/outputs/apk/release/app-universal-release.apk \
+		mupdf-$(shell git describe --tags)-android-viewer.apk
+
 clean:
 	rm -rf .gradle build
-	rm -rf jni/.externalNativeBuild jni/.gradle jni/build jni/libmupdf/generated
+	rm -rf jni/.cxx jni/.externalNativeBuild jni/.gradle jni/build
 	rm -rf lib/.gradle lib/build
 	rm -rf app/.gradle app/build

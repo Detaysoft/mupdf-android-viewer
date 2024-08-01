@@ -35,7 +35,7 @@
 				android:layout_centerVertical="true"
 				android:layout_toLeftOf="@+id/linkButton"
 				android:layout_alignParentLeft="true"
-				android:paddingLeft="16dp"
+				android:paddingLeft="16sp"
 				android:singleLine="true"
 				android:textColor="#FFFFFF"
 				android:visibility="gone"/>

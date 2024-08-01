@@ -794,14 +794,11 @@ public class ReaderView
 		Link link;
 		if (!tapDisabled) {
 			PageView pageView = (PageView) getDisplayedView();
-			if (mLinksEnabled && pageView != null && (link = pageView.hitLink(e.getX(), e.getY())) != null) {
-				if (link.uri != null) {
-					Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(link.uri));
-					intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET); // API>=21: FLAG_ACTIVITY_NEW_DOCUMENT
-					mContext.startActivity(intent);
-				} else {
+			if (mLinksEnabled && pageView != null) {
+				int page = pageView.hitLink(e.getX(), e.getY());
+				if (page > 0) {
 					pushHistory();
-					setDisplayedViewIndex(link.page);
+					setDisplayedViewIndex(page);
 				}
 			} else {
 				onTapMainDocArea();

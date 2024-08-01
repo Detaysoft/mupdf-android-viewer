@@ -48,7 +48,7 @@ public class GPAnnotationInfo {
         if (muPdfLink.uri == null) {
             componentAnnotationTypeId = COMPONENT_TYPE_ID_BOOKMARK;
             isInternal = true;
-            internalLinkPageIndex = muPdfLink.page;
+            //internalLinkPageIndex = muPdfLink.page;
             return;
         }
 
