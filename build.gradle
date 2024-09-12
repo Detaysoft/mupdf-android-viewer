@@ -1,10 +1,15 @@
 buildscript {
 	repositories {
-		jcenter()
+		if (project.hasProperty('MAVEN_REPO')) {
+			maven { url MAVEN_REPO }
+		} else {
+			maven { url "file://${System.properties['user.home']}/MAVEN" }
+		}
 		google()
+		mavenCentral()
 	}
 	dependencies {
-		classpath 'com.android.tools.build:gradle:3.4.1'
+		classpath 'com.android.tools.build:gradle:7.2.1'
 	}
 }
 
@@ -12,9 +17,11 @@ allprojects {
 	repositories {
 		if (project.hasProperty('MAVEN_REPO')) {
 			maven { url MAVEN_REPO }
+		} else {
+			maven { url "file://${System.properties['user.home']}/MAVEN" }
 		}
-		jcenter()
+		maven { url 'https://maven.ghostscript.com/' }
 		google()
-		maven { url 'http://maven.ghostscript.com/' }
+		mavenCentral()
 	}
 }

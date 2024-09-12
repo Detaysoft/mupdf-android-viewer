@@ -3,6 +3,7 @@ package com.artifex.mupdf.viewer.gp.models;
 import android.content.Context;
 import android.location.Location;
 import android.net.Uri;
+import android.util.Log;
 
 import com.artifex.mupdf.fitz.Link;
 import com.artifex.mupdf.viewer.DocumentActivity;
@@ -11,6 +12,7 @@ public class GPAnnotationInfo {
     public String url;
     private String sourceUrl;
     public Link muPdfLink;
+    private static String  baseUrlType = "baseUrlType";
 
     public static final int COMPONENT_TYPE_ID_VIDEO 		=1;
     public static final int COMPONENT_TYPE_ID_AUDIO 		=2;
@@ -20,9 +22,9 @@ public class GPAnnotationInfo {
     //public static final int COMPONENT_TYPE_ID_TOOLTIP		=6;
     //public static final int COMPONENT_TYPE_ID_SCROLLER		=7;
     private static final int COMPONENT_TYPE_ID_SLIDESHOW		=8;
-    private static final int COMPONENT_TYPE_ID_360			=9;
-    public static final int COMPONENT_TYPE_ID_BOOKMARK		=10;
-    public static final int COMPONENT_TYPE_ID_ANIMATION		=11;
+    //private static final int COMPONENT_TYPE_ID_360			=9;
+    public static final int COMPONENT_TYPE_ID_BOOKMARK		=9;
+    public static final int COMPONENT_TYPE_ID_ANIMATION		=10;
 
     private static final int  MAP_TYPE_STANDART = 0;
     private static final int  MAP_TYPE_HYBRID = 1;
@@ -39,13 +41,14 @@ public class GPAnnotationInfo {
     public boolean isSuitabale = true;
     public int internalLinkPageIndex = 0;
 
-    public GPAnnotationInfo(Link muPdfLink) {
+    public GPAnnotationInfo(Link muPdfLink, String mBaseUrlType) {
         this.muPdfLink = muPdfLink;
+        baseUrlType = mBaseUrlType;
 
         if (muPdfLink.uri == null) {
             componentAnnotationTypeId = COMPONENT_TYPE_ID_BOOKMARK;
             isInternal = true;
-            internalLinkPageIndex = muPdfLink.page;
+            //internalLinkPageIndex = muPdfLink.page;
             return;
         }
 
@@ -118,8 +121,30 @@ public class GPAnnotationInfo {
                             sourceUrl = url.substring(18);
                         }
                         else{
+                            String currentUrl;
                             isInternal = false;
-                            sourceUrl = "http://"+url.substring(8);
+                            switch (baseUrlType) {
+                                case "2":
+                                    if (url.contains("ylweb://www.galepress.com"))
+                                        currentUrl = url.replace("ylweb://www.galepress.com", "https://www.galepress.com/catalog/api");
+                                    else
+                                        currentUrl = url.replace("ylweb", "http");
+                                    break;
+                                case "3":
+                                    if (url.contains("ylweb://www.galepress.com"))
+                                        currentUrl = url.replace("ylweb://www.galepress.com", "https://www.galepress.com/api");
+                                    else
+                                        currentUrl = url.replace("ylweb", "http");
+                                    break;
+                                default:
+                                    if (url.contains("ylweb://www.galepress.com"))
+                                        currentUrl = url.replace("ylweb://www.galepress.com", "https://www.galepress.com");
+                                    else
+                                        currentUrl = url.replace("ylweb", "http");
+                                    break;
+                            }
+                            Log.d("GPAnnotationInfo", "a: " + currentUrl);
+                            sourceUrl = currentUrl;
                         }
                     } catch (Exception e){ //Url hatalı
                         isInternal = false;
@@ -191,7 +216,7 @@ public class GPAnnotationInfo {
 
     public boolean mustHorizontalScrollLock() {
         return componentAnnotationTypeId != COMPONENT_TYPE_ID_MAP &&
-                componentAnnotationTypeId != COMPONENT_TYPE_ID_360 &&
+                /*componentAnnotationTypeId != COMPONENT_TYPE_ID_360 &&*/
                 componentAnnotationTypeId != COMPONENT_TYPE_ID_SLIDESHOW &&
                 componentAnnotationTypeId != COMPONENT_TYPE_ID_VIDEO;
     }

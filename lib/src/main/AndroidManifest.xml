@@ -1,41 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:tools="http://schemas.android.com/tools"
 	package="com.artifex.mupdf.viewer"
 	>
-	<uses-permission android:name="android.permission.INTERNET" />
-	<application
-		android:usesCleartextTraffic="true"
-		>
-
+	<application>
 		<activity
 			android:name=".DocumentActivity"
 			android:configChanges="orientation|screenSize|keyboardHidden"
+			android:exported="true"
 			android:theme="@style/ReaderTheme"
-			android:hardwareAccelerated="true"
-			android:screenOrientation="sensor"
-			android:exported="true">
-			<intent-filter tools:ignore="AppLinkUrlError">
+			>
+			<intent-filter>
 				<action android:name="android.intent.action.VIEW" />
-				<category android:name="android.intent.category.DEFAULT" />
 				<category android:name="android.intent.category.BROWSABLE" />
+				<category android:name="android.intent.category.DEFAULT" />
 				<data android:mimeType="application/pdf" />
 				<data android:mimeType="application/vnd.ms-xpsdocument" />
 				<data android:mimeType="application/oxps" />
+				<data android:mimeType="application/vnd.comicbook+zip" />
 				<data android:mimeType="application/x-cbz" />
 				<data android:mimeType="application/epub+zip" />
-				<data android:mimeType="text/xml" />
-			</intent-filter>
-			<intent-filter tools:ignore="AppLinkUrlError">
-				<action android:name="android.intent.action.VIEW" />
-				<category android:name="android.intent.category.DEFAULT" />
-				<category android:name="android.intent.category.BROWSABLE" />
-				<data android:pathPattern=".*\\.pdf" />
-				<data android:pathPattern=".*\\.xps" />
-				<data android:pathPattern=".*\\.oxps" />
-				<data android:pathPattern=".*\\.cbz" />
-				<data android:pathPattern=".*\\.epub" />
-				<data android:pathPattern=".*\\.fb2" />
+				<data android:mimeType="application/x-fictionbook" />
+				<!-- list application/octet-stream to catch the ones android doesn't recognize -->
+				<data android:mimeType="application/octet-stream" />
 			</intent-filter>
 		</activity>
 		<activity
@@ -43,23 +29,5 @@
 			android:configChanges="orientation|screenSize|keyboardHidden"
 			>
 		</activity>
-		<activity
-			android:name=".gp.webviews.ExtraWebViewActivity"
-			android:configChanges="orientation|screenSize"
-			android:label="GalePress"
-			android:theme="@style/ExtraWebView"/>
-		<activity
-			android:name=".gp.CropAndShareActivity"
-			android:label="@string/title_activity_crop"
-			android:theme="@style/ReaderTheme" />
-		<provider
-			android:name="androidx.core.content.FileProvider"
-			android:authorities="${applicationId}.fileprovider"
-			android:grantUriPermissions="true"
-			android:exported="false">
-			<meta-data
-				android:name="android.support.FILE_PROVIDER_PATHS"
-				android:resource="@xml/filepaths" />
-		</provider>
 	</application>
 </manifest>

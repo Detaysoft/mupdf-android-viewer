@@ -179,7 +179,7 @@ public class PageView extends ViewGroup {
 	}
 
 	@SuppressLint("StaticFieldLeak")
-	public void setPage(int page, PointF size) {
+	public void setPage(int page, PointF size, final String baseUrlType) {
 		// Cancel pending render task
 		if (mDrawEntire != null) {
 			mDrawEntire.cancel();
@@ -224,7 +224,7 @@ public class PageView extends ViewGroup {
 
 			protected void onPostExecute(Link[] v) {
 				mLinks = v;
-				someCoolAnnotationStaff();
+				someCoolAnnotationStaff(baseUrlType);
 				if (mSearchView != null)
 					mSearchView.invalidate();
 			}
@@ -480,10 +480,10 @@ public class PageView extends ViewGroup {
 	/*
 	 * Interaktif iceriklerin sayfaya eklenmesi
 	 * */
-	private void someCoolAnnotationStaff() {
+	private void someCoolAnnotationStaff(String baseUrlType) {
 		/*
 		 * interaktif iceriklerin bilgileri alinana kadar activity'nin kapatilmasi durumu
-		 * ve interaktif iceriklerin varligi kontrol ediliyor.
+		 * ve Finteraktif iceriklerin varligi kontrol ediliyor.
 		 * */
 		if (mContext == null || mLinks == null)
 			return;
@@ -496,7 +496,7 @@ public class PageView extends ViewGroup {
 
 		for (Link l : mLinks){
 
-			final GPAnnotationInfo link = new GPAnnotationInfo(l);
+			final GPAnnotationInfo link = new GPAnnotationInfo(l, baseUrlType);
 			mGPLinks.add(link);
 
 			final int left = (int)(l.bounds.x0 * scale);
@@ -539,15 +539,14 @@ public class PageView extends ViewGroup {
 					modalButton.setBackgroundColor(Color.TRANSPARENT);
 					modalButton.setTag("modal");
 					modalButton.setOnClickListener(new OnClickListener() {
-						@Override
-						public void onClick(View v) {
-							Intent intent = new Intent(mContext, ExtraWebViewActivity.class);
-							intent.putExtra("url", link.getSourceUrlPath(mContext)); // daha once linkInfoExternal.sourceurl vardi o nedenle modal acilmiyordu
-							intent.putExtra("isModal", true);
-							mContext.startActivity(intent);
-						}
-					});
-					addView(modalButton);
+                        @Override
+                        public void onClick(View v) {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setData(Uri.parse(link.url));
+                            mContext.startActivity(intent);
+                        }
+                    });
+                    addView(modalButton);
 				}
 				else{
 					String url = link.getSourceUrlPath(mContext);
@@ -577,17 +576,50 @@ public class PageView extends ViewGroup {
 				// http://adem.me/map/index.html?lat=41.033621&lon=28.952785&zoom=16&w=400&h=300&mapType=0
 				String authority = !ModuleConfig.isTest ? "www.galepress.com" : "test.galepress.com";
 				Uri.Builder builder = new Uri.Builder();
-				builder.scheme("http");
-				builder.authority(authority);
-				builder.appendPath("files");
-				builder.appendPath("map_html");
-				builder.appendPath("index.html");
-				builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
-				builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
-				builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
-				builder.appendQueryParameter("w",String.valueOf(right-left));
-				builder.appendQueryParameter("h",String.valueOf(bottom-top));
-				builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+				switch (baseUrlType) {
+					case "1":
+						builder.scheme("https");
+						builder.authority(authority);
+						builder.appendPath("files");
+						builder.appendPath("map_html");
+						builder.appendPath("index.html");
+						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
+						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
+						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
+						builder.appendQueryParameter("w",String.valueOf(right-left));
+						builder.appendQueryParameter("h",String.valueOf(bottom-top));
+						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+						break;
+					case "2":
+						builder.scheme("https");
+						builder.authority(authority);
+						builder.appendPath("catalog");
+						builder.appendPath("api");
+						builder.appendPath("files");
+						builder.appendPath("map_html");
+						builder.appendPath("index.html");
+						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
+						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
+						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
+						builder.appendQueryParameter("w",String.valueOf(right-left));
+						builder.appendQueryParameter("h",String.valueOf(bottom-top));
+						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+						break;
+					case "3":
+						builder.scheme("https");
+						builder.authority(authority);
+						builder.appendPath("api");
+						builder.appendPath("files");
+						builder.appendPath("map_html");
+						builder.appendPath("index.html");
+						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
+						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
+						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
+						builder.appendQueryParameter("w",String.valueOf(right-left));
+						builder.appendQueryParameter("h",String.valueOf(bottom-top));
+						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
+						break;
+				}
 				String mapUrl = builder.build().toString();
 
 
@@ -611,30 +643,28 @@ public class PageView extends ViewGroup {
 				view.setTag("weblink");
 				view.readerView = ((DocumentActivity) mContext).getReaderView();
 				view.setOnClickListener(new OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						if(isMailto) {
-							Intent intent = new Intent(Intent.ACTION_SEND);
-							intent.setType("message/rfc822");
-							//intent.setType("text/html");
-							intent.putExtra(Intent.EXTRA_EMAIL, new String[]{link.url});
-							intent.putExtra(Intent.EXTRA_SUBJECT, " ");
-							intent.putExtra(Intent.EXTRA_TEXT, " ");
-							try {
-								mContext.startActivity(Intent.createChooser(intent, "Send mail..."));
-							} catch (android.content.ActivityNotFoundException ex) {
-								Toast.makeText(mContext, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
-							}
-						} else {
-							Intent intent = new Intent(mContext, ExtraWebViewActivity.class);
-							intent.putExtra("url",link.url);
-							intent.putExtra("isModal", true);
-							mContext.startActivity(intent);
-						}
-
-					}
-				});
-				addView(view);
+                    @Override
+                    public void onClick(View v) {
+                        if (isMailto) {
+                            Intent intent = new Intent(Intent.ACTION_SEND);
+                            intent.setType("message/rfc822");
+                            //intent.setType("text/html");
+                            intent.putExtra(Intent.EXTRA_EMAIL, new String[]{link.url});
+                            intent.putExtra(Intent.EXTRA_SUBJECT, " ");
+                            intent.putExtra(Intent.EXTRA_TEXT, " ");
+                            try {
+                                mContext.startActivity(Intent.createChooser(intent, "Send mail..."));
+                            } catch (android.content.ActivityNotFoundException ex) {
+                                Toast.makeText(mContext, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            intent.setData(Uri.parse(link.url));
+                            mContext.startActivity(intent);
+                        }
+                    }
+                });
+                addView(view);
 			}
 
 			if(!link.isInternal && !link.isModal) {
@@ -887,7 +917,18 @@ public class PageView extends ViewGroup {
 		return true;
 	}
 
-	public Link hitLink(float x, float y) {
+	public int hitLink(Link link) {
+		if (link.isExternal()) {
+			Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(link.uri));
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET); // API>=21: FLAG_ACTIVITY_NEW_DOCUMENT
+			mContext.startActivity(intent);
+			return 0;
+		} else {
+			return mCore.resolveLink(link);
+		}
+	}
+
+	public int hitLink(float x, float y) {
 		// Since link highlighting was implemented, the super class
 		// PageView has had sufficient information to be able to
 		// perform this method directly. Making that change would
@@ -899,8 +940,8 @@ public class PageView extends ViewGroup {
 		if (mLinks != null)
 			for (Link l: mLinks)
 				if (l.bounds.contains(docRelX, docRelY))
-					return l;
-		return null;
+					return hitLink(l);
+		return 0;
 	}
 
 	protected CancellableTaskDefinition<Void, Void> getDrawPageTask(final Bitmap bm, final int sizeX, final int sizeY,

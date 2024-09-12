@@ -1,23 +1,23 @@
 apply plugin: 'com.android.application'
 
 group = 'com.artifex.mupdf'
-version = '1.15.0'
+version = '1.19.0'
 
 dependencies {
 	implementation 'androidx.recyclerview:recyclerview:1.1.0'
 	if (file('../lib/build.gradle').isFile())
 		api project(':lib')
 	else
-		api 'com.artifex.mupdf:viewer:1.15.1'
+		api 'com.artifex.mupdf:viewer:1.19.0'
 }
 
 android {
-	compileSdkVersion 28
+	compileSdkVersion 31
 	defaultConfig {
 		minSdkVersion 21
-		targetSdkVersion 28
-		versionName '1.15.1'
-		versionCode 60
+		targetSdkVersion 31
+		versionName '1.19.0'
+		versionCode 100
 	}
 
 	splits {
@@ -27,13 +27,9 @@ android {
 		}
 	}
 
-	// Increment version code for each ABI variant
-	def abiOffsets = [ 'armeabi-v7a':1, 'arm64-v8a':2, 'x86':3, 'x86_64':4, ]
-	applicationVariants.all { variant ->
-		variant.outputs.each { output ->
-			def offset = abiOffsets.get(output.getFilter(com.android.build.OutputFile.ABI))
-			if (offset != null)
-				output.versionCodeOverride = variant.versionCode + offset
+	bundle {
+		abi {
+			enableSplit true
 		}
 	}
 

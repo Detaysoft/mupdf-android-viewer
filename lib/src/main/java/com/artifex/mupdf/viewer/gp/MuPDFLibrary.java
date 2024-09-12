@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.artifex.mupdf.viewer.DocumentActivity;
 
+
 public class MuPDFLibrary extends Application {
 
     public final static String TAG = "MuPDFLibrary";
