@@ -82,7 +82,6 @@ public class DocumentActivity extends Activity
 {
 	public final static String EXTRA_THEME_TYPE = "themeType";
 	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
-	public final static String BASE_URL_TYPE = "baseUrlType";
 	/* The core rendering instance */
 	enum TopBarMode {Main, Search}
 
@@ -527,8 +526,7 @@ public class DocumentActivity extends Activity
 					setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 			}
 		};
-		String baseUrlType = getIntent().getStringExtra(BASE_URL_TYPE);
-		mDocView.setAdapter(new PageAdapter(this, core, baseUrlType));
+		mDocView.setAdapter(new PageAdapter(this, core));
 
 		// GalePress set background theme color
 		mDocView.setBackgroundColor(ThemeColor.getInstance().getThemeColor());

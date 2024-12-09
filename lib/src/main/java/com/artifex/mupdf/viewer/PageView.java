@@ -6,7 +6,6 @@ import com.artifex.mupdf.fitz.Quad;
 import com.artifex.mupdf.viewer.gp.models.GPAnnotationInfo;
 import com.artifex.mupdf.viewer.gp.CustomPulseProgress;
 import com.artifex.mupdf.viewer.gp.util.ModuleConfig;
-import com.artifex.mupdf.viewer.gp.webviews.ExtraWebViewActivity;
 import com.artifex.mupdf.viewer.gp.webviews.ViewAnnotation;
 import com.artifex.mupdf.viewer.gp.webviews.WebViewAnnotation;
 import android.annotation.SuppressLint;
@@ -179,7 +178,7 @@ public class PageView extends ViewGroup {
 	}
 
 	@SuppressLint("StaticFieldLeak")
-	public void setPage(int page, PointF size, final String baseUrlType) {
+	public void setPage(int page, PointF size) {
 		// Cancel pending render task
 		if (mDrawEntire != null) {
 			mDrawEntire.cancel();
@@ -224,7 +223,7 @@ public class PageView extends ViewGroup {
 
 			protected void onPostExecute(Link[] v) {
 				mLinks = v;
-				someCoolAnnotationStaff(baseUrlType);
+				someCoolAnnotationStaff();
 				if (mSearchView != null)
 					mSearchView.invalidate();
 			}
@@ -480,7 +479,7 @@ public class PageView extends ViewGroup {
 	/*
 	 * Interaktif iceriklerin sayfaya eklenmesi
 	 * */
-	private void someCoolAnnotationStaff(String baseUrlType) {
+	private void someCoolAnnotationStaff() {
 		/*
 		 * interaktif iceriklerin bilgileri alinana kadar activity'nin kapatilmasi durumu
 		 * ve Finteraktif iceriklerin varligi kontrol ediliyor.
@@ -496,7 +495,7 @@ public class PageView extends ViewGroup {
 
 		for (Link l : mLinks){
 
-			final GPAnnotationInfo link = new GPAnnotationInfo(l, baseUrlType);
+			final GPAnnotationInfo link = new GPAnnotationInfo(l);
 			mGPLinks.add(link);
 
 			final int left = (int)(l.bounds.x0 * scale);
@@ -576,50 +575,18 @@ public class PageView extends ViewGroup {
 				// http://adem.me/map/index.html?lat=41.033621&lon=28.952785&zoom=16&w=400&h=300&mapType=0
 				String authority = !ModuleConfig.isTest ? "www.galepress.com" : "test.galepress.com";
 				Uri.Builder builder = new Uri.Builder();
-				switch (baseUrlType) {
-					case "1":
-						builder.scheme("https");
-						builder.authority(authority);
-						builder.appendPath("files");
-						builder.appendPath("map_html");
-						builder.appendPath("index.html");
-						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
-						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
-						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
-						builder.appendQueryParameter("w",String.valueOf(right-left));
-						builder.appendQueryParameter("h",String.valueOf(bottom-top));
-						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
-						break;
-					case "2":
-						builder.scheme("https");
-						builder.authority(authority);
-						builder.appendPath("catalog");
-						builder.appendPath("api");
-						builder.appendPath("files");
-						builder.appendPath("map_html");
-						builder.appendPath("index.html");
-						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
-						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
-						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
-						builder.appendQueryParameter("w",String.valueOf(right-left));
-						builder.appendQueryParameter("h",String.valueOf(bottom-top));
-						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
-						break;
-					case "3":
-						builder.scheme("https");
-						builder.authority(authority);
-						builder.appendPath("api");
-						builder.appendPath("files");
-						builder.appendPath("map_html");
-						builder.appendPath("index.html");
-						builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
-						builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
-						builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
-						builder.appendQueryParameter("w",String.valueOf(right-left));
-						builder.appendQueryParameter("h",String.valueOf(bottom-top));
-						builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
-						break;
-				}
+				builder.scheme("https");
+				builder.authority(authority);
+				builder.appendPath("api");
+				builder.appendPath("files");
+				builder.appendPath("map_html");
+				builder.appendPath("index.html");
+				builder.appendQueryParameter("lat",String.valueOf(link.location.getLatitude()));
+				builder.appendQueryParameter("lon",String.valueOf(link.location.getLongitude()));
+				builder.appendQueryParameter("zoom",String.valueOf(link.zoom));
+				builder.appendQueryParameter("w",String.valueOf(right-left));
+				builder.appendQueryParameter("h",String.valueOf(bottom-top));
+				builder.appendQueryParameter("mapType",String.valueOf(link.mapType));
 				String mapUrl = builder.build().toString();
 
 
@@ -657,11 +624,16 @@ public class PageView extends ViewGroup {
                             } catch (android.content.ActivityNotFoundException ex) {
                                 Toast.makeText(mContext, "There are no email clients installed.", Toast.LENGTH_SHORT).show();
                             }
-                        } else {
+                        } else if (link.url.contains("http")) {
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             intent.setData(Uri.parse(link.url));
                             mContext.startActivity(intent);
-                        }
+                        } else {
+							int number = Integer.parseInt(link.url.substring(link.url.indexOf('#') + 1, link.url.indexOf(',')));
+							if (link.url.contains("#")) {
+								((DocumentActivity) mContext).jumpToPageAtIndex(number - 1);
+							}
+						}
                     }
                 });
                 addView(view);
