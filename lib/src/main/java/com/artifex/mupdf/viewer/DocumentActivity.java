@@ -21,6 +21,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import androidx.core.text.HtmlCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -1388,14 +1389,34 @@ public class DocumentActivity extends Activity
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				if(mReaderSearchResult != null && mReaderSearchResult.size() > position) {
-					int resultPageIndex = mReaderSearchResult.get(position).getPage() - 1;
-					mDocView.setDisplayedViewIndex(resultPageIndex);
+					GPReaderSearchResult result = mReaderSearchResult.get(position);
+					int resultPageIndex = result.getPage() - 1;
+
+					// Get the original search text from the search box
+					String searchText = mPopupSearchEditText.getText().toString().trim();
+
+					if(!searchText.isEmpty()) {
+						// Move to page first
+						mDocView.setDisplayedViewIndex(resultPageIndex);
+
+						// Create a SearchTask to find and highlight the text
+						SearchTask searchTask = new SearchTask(DocumentActivity.this, core) {
+							@Override
+							protected void onTextFound(SearchTaskResult result) {
+								// Set the search result which will trigger highlighting
+								SearchTaskResult.set(result);
+								mDocView.resetupChildren();
+							}
+						};
+						// Start searching on the specific page
+						searchTask.go(searchText, 0, resultPageIndex, resultPageIndex);
+					}
 
 					// refresh page preview bar
-                    if(isPagePreviewActive){
-                        scrollToThumbnailPagePreviewIndex(resultPageIndex);
-                        mRecyclerPagePreviewAdapter.notifyDataSetChanged();
-                    }
+					if(isPagePreviewActive){
+						scrollToThumbnailPagePreviewIndex(resultPageIndex);
+						mRecyclerPagePreviewAdapter.notifyDataSetChanged();
+					}
 					searchModeOff();
 				}
 			}
@@ -1478,7 +1499,7 @@ public class DocumentActivity extends Activity
 
 			GPReaderSearchResult pageItem = textSearchList.get(position);
 			TextView title = convertView.findViewById(R.id.reader_search_result_page_title);
-			title.setText(Html.fromHtml(pageItem.getText()).toString());
+			title.setText(HtmlCompat.fromHtml(pageItem.getText(), HtmlCompat.FROM_HTML_MODE_LEGACY));
 			title.setTextColor(ThemeColor.getInstance().getStrongOppositeThemeColor());
 			title.setTypeface(ThemeFont.getInstance().getRegularFont(mContext));
 
