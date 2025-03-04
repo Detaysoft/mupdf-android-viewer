@@ -14,14 +14,12 @@ import android.os.AsyncTask;
 public class PageAdapter extends BaseAdapter {
 	private final Context mContext;
 	private final MuPDFCore mCore;
-	private final String mBaseUrlType;
 	private final SparseArray<PointF> mPageSizes = new SparseArray<>();
 	private       Bitmap mSharedHqBm;
 
-	PageAdapter(Context c, MuPDFCore core, String baseUrlType) {
+	PageAdapter(Context c, MuPDFCore core) {
 		mContext = c;
 		mCore = core;
-		mBaseUrlType = baseUrlType;
 	}
 
 	public int getCount() {
@@ -66,7 +64,7 @@ public class PageAdapter extends BaseAdapter {
 		if (pageSize != null) {
 			// We already know the page size. Set it up
 			// immediately
-			pageView.setPage(position, pageSize, mBaseUrlType);
+			pageView.setPage(position, pageSize);
 		} else {
 			// Page size as yet unknown. Blank it for now, and
 			// start a background task to find the size
@@ -85,7 +83,7 @@ public class PageAdapter extends BaseAdapter {
 					// Check that this view hasn't been reused for
 					// another page since we started
 					if (pageView.getPage() == position)
-						pageView.setPage(position, result, mBaseUrlType);
+						pageView.setPage(position, result);
 				}
 			};
 
