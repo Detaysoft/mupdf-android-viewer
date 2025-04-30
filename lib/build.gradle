@@ -20,7 +20,7 @@ dependencies {
 }
 
 android {
-	namespace 'com.artifex.mupdf'
+	namespace 'com.artifex.mupdf.viewer'
 	compileSdkVersion 31
 	defaultConfig {
 		minSdkVersion 21
