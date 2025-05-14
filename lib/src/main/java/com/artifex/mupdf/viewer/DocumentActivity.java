@@ -20,6 +20,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import androidx.core.text.HtmlCompat;
 import androidx.core.view.GravityCompat;
@@ -27,6 +28,8 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
@@ -76,8 +79,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Locale;
-
-
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DocumentActivity extends Activity
 {
@@ -232,9 +236,7 @@ public class DocumentActivity extends Activity
 		ProgressRecycler = findViewById(R.id.ProgressRecycler);
 
 		asyncThumb = new AsyncThumb();
-		if (asyncThumb.getStatus() != AsyncTask.Status.RUNNING){
-			asyncThumb.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-		}
+		asyncThumb.execute();
 	}
 
 	private void saveImage(Bitmap finalBitmap, int index, String ContentId) {
@@ -264,41 +266,66 @@ public class DocumentActivity extends Activity
 
 
 	@SuppressLint("StaticFieldLeak")
-	public class AsyncThumb extends  AsyncTask<Void,Void,Void>{
+	public class AsyncThumb {
+		private final ExecutorService executor;
+		private final Handler mainHandler;
+		private volatile boolean isRunning = false;
+		private volatile boolean isCancelled = false;
 
-		@Override
-		protected Void doInBackground(Void... voids) {
-			final PagePreview[] ppArray = new PagePreview[core.countPages()];
-			String root = getFilesDir().getAbsolutePath();
-			String Cache = root + "/saved_images/" + getContentId();
-
-			File file = new File(Cache);
-			if(!file.exists()){
-				ArrayList<Bitmap> bm_images = core.getPDFThumbnails(120, 180);
-				for (int i = 0; i < core.countPages(); i++){
-					ppArray[i] = new PagePreview(i, bm_images.get(i));
-					saveImage(bm_images.get(i), i, getContentId());
-				}
-			}
-			else {
-				for (int i = 0; i < core.countPages(); i++) {
-					Bitmap bitmap = readImage(i);
-					ppArray[i] = new PagePreview(i, bitmap);
-				}
-			}
-			mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
-			return null;
+		public AsyncThumb() {
+			executor = Executors.newSingleThreadExecutor();
+			mainHandler = new Handler(Looper.getMainLooper());
 		}
 
-		@Override
-		protected void onPostExecute(Void aVoid) {
-			super.onPostExecute(aVoid);
-			isPagePreviewActive = true;
-			mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
-			int displayingPageIndex = mDocView.getDisplayedViewIndex();
-			mRecyclerPagePreviewAdapter.setSelectedIndex(displayingPageIndex);
-			scrollToThumbnailPagePreviewIndex(displayingPageIndex);
-			ProgressRecycler.setVisibility(View.INVISIBLE);
+		public void execute() {
+			isRunning = true;
+			isCancelled = false;
+
+			executor.execute(() -> {
+                final PagePreview[] ppArray = new PagePreview[core.countPages()];
+                String root = getFilesDir().getAbsolutePath();
+                String Cache = root + "/saved_images/" + getContentId();
+
+                File file = new File(Cache);
+                if(!file.exists()){
+                    ArrayList<Bitmap> bm_images = core.getPDFThumbnails(120, 180);
+                    for (int i = 0; i < core.countPages() && !isCancelled; i++){
+                        ppArray[i] = new PagePreview(i, bm_images.get(i));
+                        saveImage(bm_images.get(i), i, getContentId());
+                    }
+                }
+                else {
+                    for (int i = 0; i < core.countPages() && !isCancelled; i++) {
+                        Bitmap bitmap = readImage(i);
+                        ppArray[i] = new PagePreview(i, bitmap);
+                    }
+                }
+                // Ana thread'de UI işlemlerini yap
+                mainHandler.post(() -> {
+                    if (!isCancelled) {
+                        mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
+                        isPagePreviewActive = true;
+                        mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
+                        int displayingPageIndex = mDocView.getDisplayedViewIndex();
+                        mRecyclerPagePreviewAdapter.setSelectedIndex(displayingPageIndex);
+                        scrollToThumbnailPagePreviewIndex(displayingPageIndex);
+                        ProgressRecycler.setVisibility(View.INVISIBLE);
+                    }
+                    isRunning = false;
+                });
+            });
+		}
+
+		public void cancel() {
+			if (isRunning) {
+				isCancelled = true;
+				executor.shutdownNow();
+				isRunning = false;
+			}
+		}
+
+		public boolean isRunning() {
+			return isRunning;
 		}
 	}
 
@@ -1544,7 +1571,9 @@ public class DocumentActivity extends Activity
 
 	@Override
 	public void onBackPressed() {
-		asyncThumb.cancel(true);
+		if (asyncThumb != null && asyncThumb.isRunning()) {
+			asyncThumb.cancel();
+		}
 		finish();
 	}
 }
