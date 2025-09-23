@@ -5,10 +5,11 @@ import com.artifex.mupdf.fitz.Quad;
 public class SearchTaskResult {
 	final String txt;
 	final int pageNumber;
-	final Quad[] searchBoxes;
+	// TODO: MuPDF upgrade
+	public final Quad searchBoxes[][];
 	static private SearchTaskResult singleton;
-
-	SearchTaskResult(String _txt, int _pageNumber, Quad[] _searchBoxes) {
+	// TODO: MuPDF upgrade
+	SearchTaskResult(String _txt, int _pageNumber, Quad _searchBoxes[][]) {
 		txt = _txt;
 		pageNumber = _pageNumber;
 		searchBoxes = _searchBoxes;

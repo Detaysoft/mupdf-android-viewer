@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface;
@@ -12,6 +13,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -30,6 +32,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.OpenableColumns;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
@@ -61,6 +64,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
+
+import com.artifex.mupdf.fitz.SeekableInputStream;
 import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
 import com.artifex.mupdf.viewer.gp.CropAndShareActivity;
 import com.artifex.mupdf.viewer.gp.OutlineAdapter;
@@ -77,6 +82,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
@@ -88,6 +95,7 @@ public class DocumentActivity extends Activity
 	public final static String EXTRA_THEME_TYPE = "themeType";
 	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
 	/* The core rendering instance */
+	private final String APP = "MuPDF";
 	enum TopBarMode {Main, Search}
 
 	/**
@@ -98,12 +106,13 @@ public class DocumentActivity extends Activity
 
 	private final int    OUTLINE_REQUEST=0;
 	private MuPDFCore    core;
-	private String       mFileName;
+	private String       mDocTitle;
+	private String       mDocKey;
 	private ReaderView   mDocView;
 	private View         mButtonsView;
 	private boolean      mButtonsVisible;
 	private EditText     mPasswordView;
-	private TextView     mFilenameView;
+	private TextView     mDocNameView;
 	private ImageButton  mSearchButton;
 	private ImageButton  mOutlineButton;
 	private ImageButton  mShareButton;
@@ -170,40 +179,86 @@ public class DocumentActivity extends Activity
 	private int mOrientation;
 	private boolean deviceType;
 
-	private MuPDFCore openFile(String path)
+	private MuPDFCore openBuffer(byte buffer[], String magic)
 	{
-		int lastSlashPos = path.lastIndexOf('/');
-		mFileName = lastSlashPos == -1
-				? path
-				: path.substring(lastSlashPos + 1);
-		System.out.println("Trying to open " + path);
-		try
-		{
-			core = new MuPDFCore(path);
-		}
-		catch (Exception | OutOfMemoryError e)
-		{
-			System.out.println(e);
-			return null;
-		}
-		//  out of memory is not an Exception, so we catch it separately.
-
-		return core;
-	}
-
-	private MuPDFCore openBuffer(byte[] buffer, String magic)
-	{
-		System.out.println("Trying to open byte buffer");
 		try
 		{
 			core = new MuPDFCore(buffer, magic);
 		}
 		catch (Exception e)
 		{
-			System.out.println(e);
+			Log.e(APP, "Error opening document buffer: " + e);
 			return null;
 		}
 		return core;
+	}
+
+	private MuPDFCore openStream(SeekableInputStream stm, String magic)
+	{
+		try
+		{
+			core = new MuPDFCore(stm, magic);
+		}
+		catch (Exception e)
+		{
+			Log.e(APP, "Error opening document stream: " + e);
+			return null;
+		}
+		return core;
+	}
+
+	private MuPDFCore openCore(Uri uri, long size, String mimetype) throws IOException {
+		ContentResolver cr = getContentResolver();
+
+		Log.i(APP, "Opening document " + uri);
+
+		InputStream is = cr.openInputStream(uri);
+		byte[] buf = null;
+		int used = -1;
+		try {
+			final int limit = 8 * 1024 * 1024;
+			if (size < 0) { // size is unknown
+				buf = new byte[limit];
+				used = is.read(buf);
+				boolean atEOF = is.read() == -1;
+				if (used < 0 || (used == limit && !atEOF)) // no or partial data
+					buf = null;
+			} else if (size <= limit) { // size is known and below limit
+				buf = new byte[(int) size];
+				used = is.read(buf);
+				if (used < 0 || used < size) // no or partial data
+					buf = null;
+			}
+			if (buf != null && buf.length != used) {
+				byte[] newbuf = new byte[used];
+				System.arraycopy(buf, 0, newbuf, 0, used);
+				buf = newbuf;
+			}
+		} catch (OutOfMemoryError e) {
+			buf = null;
+		} finally {
+			is.close();
+		}
+
+		if (buf != null) {
+			Log.i(APP, "  Opening document from memory buffer of size " + buf.length);
+			// MIME type kontrolü ve düzeltmesi
+			if (mimetype == null || mimetype.isEmpty()) {
+				mimetype = "application/pdf";
+				Log.i(APP, "  MIME type was null/empty, setting to: " + mimetype);
+			}
+			Log.i(APP, "  Using MIME type: " + mimetype);
+			return openBuffer(buf, mimetype);
+		} else {
+			Log.i(APP, "  Opening document from stream");
+			// MIME type kontrolü ve düzeltmesi
+			if (mimetype == null || mimetype.isEmpty()) {
+				mimetype = "application/pdf";
+				Log.i(APP, "  MIME type was null/empty, setting to: " + mimetype);
+			}
+			Log.i(APP, "  Using MIME type: " + mimetype);
+			return openStream(new ContentInputStream(cr, uri, size), mimetype);
+		}
 	}
 
 	/** Called when the activity is first created. */
@@ -235,8 +290,27 @@ public class DocumentActivity extends Activity
 
 		ProgressRecycler = findViewById(R.id.ProgressRecycler);
 
-		asyncThumb = new AsyncThumb();
-		asyncThumb.execute();
+		// Core objesi hazır olduğunda AsyncThumb'ı başlat
+		if (core != null) {
+			asyncThumb = new AsyncThumb();
+			asyncThumb.execute();
+		} else {
+			Log.e(APP, "Core is null, cannot start AsyncThumb");
+		}
+	}
+
+	// TODO: MuPDF upgrade
+	private void showCannotOpenDialog(String reason) {
+		Resources res = getResources();
+		AlertDialog alert = mAlertBuilder.create();
+		setTitle(String.format(Locale.ROOT, res.getString(R.string.cannot_open_document_Reason), reason));
+		alert.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss),
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						finish();
+					}
+				});
+		alert.show();
 	}
 
 	private void saveImage(Bitmap finalBitmap, int index, String ContentId) {
@@ -265,7 +339,6 @@ public class DocumentActivity extends Activity
 	}
 
 
-	@SuppressLint("StaticFieldLeak")
 	public class AsyncThumb {
 		private final ExecutorService executor;
 		private final Handler mainHandler;
@@ -282,6 +355,11 @@ public class DocumentActivity extends Activity
 			isCancelled = false;
 
 			executor.execute(() -> {
+				// Core objesi null kontrolü
+				if (core == null) {
+					Log.e(APP, "Core is null, cannot create page previews");
+					return;
+				}
                 final PagePreview[] ppArray = new PagePreview[core.countPages()];
                 String root = getFilesDir().getAbsolutePath();
                 String Cache = root + "/saved_images/" + getContentId();
@@ -332,14 +410,14 @@ public class DocumentActivity extends Activity
 
 	private void prepareDocument(Bundle savedInstanceState) {
 		if (core == null) {
-			if (savedInstanceState != null && savedInstanceState.containsKey("FileName")) {
-				mFileName = savedInstanceState.getString("FileName");
+			if (savedInstanceState != null && savedInstanceState.containsKey("DocTitle")) {
+				mDocTitle = savedInstanceState.getString("DocTitle");
 			}
 		}
 
 		if (core == null) {
 			Intent intent = getIntent();
-
+			//TODO GalePress Customization
 			//---------- GalePress Integration [Start]
 
 			// if application instance registered, use its methods for search, set etc.
@@ -385,44 +463,67 @@ public class DocumentActivity extends Activity
 
 			//---------- GalePress Integration [End]
 
-			byte[] buffer;
+			SeekableInputStream file;
 
 			if (Intent.ACTION_VIEW.equals(intent.getAction())) {
 				Uri uri = intent.getData();
-				System.out.println("URI to open is: " + uri);
-				if (uri.getScheme().equals("file")) {
-					String path = uri.getPath();
-					core = openFile(path);
-				} else {
-					try {
-						InputStream is = getContentResolver().openInputStream(uri);
-						int len;
-						ByteArrayOutputStream bufferStream = new ByteArrayOutputStream();
-						byte[] data = new byte[16384];
-						while ((len = is.read(data, 0, data.length)) != -1) {
-							bufferStream.write(data, 0, len);
-						}
-						bufferStream.flush();
-						buffer = bufferStream.toByteArray();
-						is.close();
-					}
-					catch (IOException e) {
-						String reason = e.toString();
-						Resources res = getResources();
-						AlertDialog alert = mAlertBuilder.create();
-						setTitle(String.format(Locale.ROOT, res.getString(R.string.cannot_open_document_Reason), reason));
-						alert.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss),
-								new DialogInterface.OnClickListener() {
-									public void onClick(DialogInterface dialog, int which) {
-										finish();
-									}
-								});
-						alert.show();
-						return;
-					}
-					core = openBuffer(buffer, intent.getType());
+				String mimetype = getIntent().getType();
+				if (uri == null)  {
+					showCannotOpenDialog("No document uri to open");
+					return;
 				}
-				SearchTaskResult.set(null);
+				mDocKey = uri.toString();
+
+				Log.i(APP, "OPEN URI " + uri.toString());
+				Log.i(APP, "  MAGIC (Intent) " + mimetype);
+
+				mDocTitle = null;
+				long size = -1;
+				Cursor cursor = null;
+
+				try {
+					cursor = getContentResolver().query(uri, null, null, null, null);
+					if (cursor != null && cursor.moveToFirst()) {
+						int idx;
+
+						idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+						if (idx >= 0 && cursor.getType(idx) == Cursor.FIELD_TYPE_STRING)
+							mDocTitle = cursor.getString(idx);
+
+						idx = cursor.getColumnIndex(OpenableColumns.SIZE);
+						if (idx >= 0 && cursor.getType(idx) == Cursor.FIELD_TYPE_INTEGER)
+							size = cursor.getLong(idx);
+
+						if (size == 0)
+							size = -1;
+					}
+				} catch (Exception x) {
+					// Ignore any exception and depend on default values for title
+					// and size (unless one was decoded
+				} finally {
+					if (cursor != null)
+						cursor.close();
+				}
+
+				Log.i(APP, "  NAME " + mDocTitle);
+				Log.i(APP, "  SIZE " + size);
+
+				if (mimetype == null || mimetype.equals("application/octet-stream")) {
+					mimetype = getContentResolver().getType(uri);
+					Log.i(APP, "  MAGIC (Resolved) " + mimetype);
+				}
+				if (mimetype == null || mimetype.equals("application/octet-stream")) {
+					mimetype = mDocTitle;
+					Log.i(APP, "  MAGIC (Filename) " + mimetype);
+				}
+
+				try {
+					core = openCore(uri, size, mimetype);
+					SearchTaskResult.set(null);
+				} catch (Exception x) {
+					showCannotOpenDialog(x.toString());
+					return;
+				}
 			}
 			if (core != null && core.needsPassword()) {
 				requestPassword(savedInstanceState);
@@ -509,10 +610,10 @@ public class DocumentActivity extends Activity
 			protected void onMoveToChild(int i) {
 				if (core == null)
 					return;
-                if(isPagePreviewActive){
-                    mRecyclerPagePreviewAdapter.setSelectedIndex(i);
-                    scrollToThumbnailPagePreviewIndex(i);
-                }
+				if (isPagePreviewActive) {
+					mRecyclerPagePreviewAdapter.setSelectedIndex(i);
+					scrollToThumbnailPagePreviewIndex(i);
+				}
 				super.onMoveToChild(i);
 			}
 
@@ -545,6 +646,7 @@ public class DocumentActivity extends Activity
 			@Override
 			public void onConfigurationChanged(Configuration newConfig) {
 				super.onConfigurationChanged(newConfig);
+				//TODO GalePress Customization
 			// GalePress integration: manage layout of custom views on orientation change
 				if (mOrientation != newConfig.orientation && deviceType) {
 					relayoutCustomViews(mCurrent);
@@ -578,12 +680,12 @@ public class DocumentActivity extends Activity
 		// Set the file-name text
 		String docTitle = core.getTitle();
 		if (docTitle != null)
-			mFilenameView.setText(docTitle);
+			mDocNameView.setText(docTitle);
 		else
-			mFilenameView.setText(mFileName);
+			mDocNameView.setText(mDocTitle);
 
 		//---------- GalePress recycle page preview [Start]
-
+		//TODO GalePress Customization
 		mRecylerPagePreviewLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
 
 		mRecyclerPagePreview = mButtonsView.findViewById(R.id.recyclerPagePreview);
@@ -656,7 +758,7 @@ public class DocumentActivity extends Activity
 		if(content !=null){
 			mDocView.setDisplayedViewIndex(prefs.getInt("page" + getContentId(), 0));
 		}else{
-			mDocView.setDisplayedViewIndex(prefs.getInt("page" + mFileName, 0));
+			mDocView.setDisplayedViewIndex(prefs.getInt("page" + mDocKey, 0));
 		}
 
 
@@ -668,7 +770,7 @@ public class DocumentActivity extends Activity
 			searchModeOn();
 
 		//---------- GalePress Integration - Drawer [Start]
-
+		//TODO GalePress Customization
 		// Stick the document view and the buttons overlay into a parent view
 		if (core.hasOutline()) {
 
@@ -739,7 +841,7 @@ public class DocumentActivity extends Activity
 
 		//---------- GalePress Integration - Drawer [End]
 	}
-
+	//TODO GalePress Customization
 	public void createLibSearchUI() {
 		mButtonsView.findViewById(R.id.searchBar).setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
 
@@ -838,7 +940,7 @@ public class DocumentActivity extends Activity
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == OUTLINE_REQUEST) {
-			if (resultCode >= RESULT_FIRST_USER) {
+			if (resultCode >= RESULT_FIRST_USER && mDocView != null) {
 				mDocView.pushHistory();
 				mDocView.setDisplayedViewIndex(resultCode - RESULT_FIRST_USER);
 			}
@@ -852,15 +954,16 @@ public class DocumentActivity extends Activity
 
 		mOrientation = getResources().getConfiguration().orientation;
 
-		if (mFileName != null && mDocView != null) {
-			outState.putString("FileName", mFileName);
+		if (mDocKey != null && mDocView != null) {
+			if (mDocTitle != null)
+				outState.putString("FileName", mDocTitle);
 			// Store current page in the prefs against the file name,
 			// so that we can pick it up each time the file is loaded
 			// Other info is needed only for screen-orientation change,
 			// so it can go in the bundle
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
-			edit.putInt("page"+mFileName, mDocView.getDisplayedViewIndex());
+			edit.putInt("page"+mDocKey, mDocView.getDisplayedViewIndex());
 			edit.apply();
 		}
 		if (!mButtonsVisible)
@@ -876,7 +979,7 @@ public class DocumentActivity extends Activity
 
 		if (mSearchTask != null)
 			mSearchTask.stop();
-		if (mFileName != null && mDocView != null) {
+		if (mDocKey != null && mDocView != null) {
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
 			if(content !=null){
@@ -894,7 +997,8 @@ public class DocumentActivity extends Activity
 	{
 		if (mDocView != null) {
 			mDocView.applyToChildren(new ReaderView.ViewMapper() {
-				void applyToView(View view) {
+				@Override
+				public void applyToView(View view) {
 					((PageView)view).releaseBitmaps();
 				}
 			});
@@ -987,8 +1091,8 @@ public class DocumentActivity extends Activity
 				public void onAnimationRepeat(Animation animation) {}
 
 				public void onAnimationEnd(Animation animation) {
-					if(!isPagePreviewActive)
-					ProgressRecycler.setVisibility(View.VISIBLE);
+					if (!isPagePreviewActive)
+						ProgressRecycler.setVisibility(View.VISIBLE);
 				}
 			});
 			mReaderShowPageThumbnailsButton.startAnimation(anim);
@@ -1113,7 +1217,7 @@ public class DocumentActivity extends Activity
 
 	private void makeButtonsView() {
 		mButtonsView = getLayoutInflater().inflate(R.layout.document_activity, null);
-		mFilenameView = mButtonsView.findViewById(R.id.docNameText);
+		mDocNameView = mButtonsView.findViewById(R.id.docNameText);
 		mRecyclerPagePreview = mButtonsView.findViewById(R.id.recyclerPagePreview); // GP recycler view
 		mSearchButton = mButtonsView.findViewById(R.id.searchButton);
 		mOutlineButton = mButtonsView.findViewById(R.id.outlineButton);
@@ -1568,7 +1672,7 @@ public class DocumentActivity extends Activity
 		}
 		super.onStop();
 	}
-
+	// TODO: MuPDF upgrade
 	@Override
 	public void onBackPressed() {
 		if (asyncThumb != null && asyncThumb.isRunning()) {

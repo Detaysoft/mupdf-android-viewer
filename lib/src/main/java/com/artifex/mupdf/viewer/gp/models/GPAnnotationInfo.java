@@ -43,14 +43,14 @@ public class GPAnnotationInfo {
     public GPAnnotationInfo(Link muPdfLink) {
         this.muPdfLink = muPdfLink;
 
-        if (muPdfLink.uri == null) {
+        if (muPdfLink.getURI() == null) {
             componentAnnotationTypeId = COMPONENT_TYPE_ID_BOOKMARK;
             isInternal = true;
             //internalLinkPageIndex = muPdfLink.page;
             return;
         }
 
-        url = muPdfLink.uri;
+        url = muPdfLink.getURI();
         Uri uri = Uri.parse(url);
 
         if(uri.isHierarchical()) {

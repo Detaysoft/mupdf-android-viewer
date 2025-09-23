@@ -32,6 +32,7 @@ public class LibraryActivity extends Activity
 				"application/vnd.comicbook+zip",
 				"application/epub+zip",
 				"application/x-fictionbook",
+				"application/x-mobipocket-ebook"
 				// ... and the ones android doesn't know about
 				"application/octet-stream"
 		});
@@ -45,11 +46,14 @@ public class LibraryActivity extends Activity
 			if (data != null) {
 				Intent intent = new Intent(this, DocumentActivity.class);
 				intent.addFlags(Intent.FLAG_ACTIVITY_NEW_DOCUMENT);
+				//intent.addFlags(Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
 				intent.setAction(Intent.ACTION_VIEW);
 				intent.setDataAndType(data.getData(), data.getType());
 				startActivity(intent);
 			}
 			finish();
+		/*} else if (request == FILE_REQUEST && result == Activity.RESULT_CANCELED) {
+			finish();*/
 		}
 	}
 }

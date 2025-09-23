@@ -154,7 +154,7 @@ public class WebViewAnnotation extends WebView {
         s.setDomStorageEnabled(true);
         s.setMediaPlaybackRequiresUserGesture(false); //false olarak set edilmedigi autoplay calismiyor.
         s.setAllowFileAccess(true);
-        s.setAppCacheEnabled(true);
+        //s.setAppCacheEnabled(true);
         s.setAllowFileAccessFromFileURLs(true);
         s.setAllowUniversalAccessFromFileURLs(true);
         s.setSupportZoom(true);
