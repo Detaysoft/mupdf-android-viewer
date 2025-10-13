@@ -120,6 +120,24 @@
 					/>
 			</LinearLayout>
 
+			<LinearLayout
+				android:id="@+id/noteButtonBase"
+				android:layout_width="25dp"
+				android:layout_height="25dp"
+				android:orientation="vertical"
+				android:gravity="center"
+				android:layout_toLeftOf="@id/searchButtonBase"
+				android:layout_marginLeft="5dp"
+				android:layout_centerVertical="true">
+
+				<ImageButton
+					android:id="@+id/noteButton"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:background="@android:color/transparent"
+					/>
+			</LinearLayout>
+
 		</RelativeLayout>
 
 		<LinearLayout

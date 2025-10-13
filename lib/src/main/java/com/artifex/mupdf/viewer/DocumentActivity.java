@@ -92,8 +92,9 @@ import java.util.concurrent.Executors;
 
 public class DocumentActivity extends Activity
 {
-	public final static String EXTRA_THEME_TYPE = "themeType";
-	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
+    public final static String EXTRA_THEME_TYPE = "themeType";
+    public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
+    public final static String EXTRA_INITIAL_PAGE_INDEX = "initialPageIndex";
 	/* The core rendering instance */
 	private final String APP = "MuPDF";
 	enum TopBarMode {Main, Search}
@@ -141,7 +142,9 @@ public class DocumentActivity extends Activity
 	private LinearLayout mSearchProgressBaseView;
 	private LinearLayout mSearchClearBaseView;
 	private PopupWindow mSearchPopup;
+	private PopupWindow mNotePopup;
 	private EditText mPopupSearchEditText;
+	private EditText mPopupNoteEditText;
 	private String mReaderSearchWord;
 	public ProgressDialog mSearchDialog;
 
@@ -702,6 +705,12 @@ public class DocumentActivity extends Activity
 			}
 		});
 
+		ImageButton noteButton = mButtonsView.findViewById(R.id.noteButton);
+		if (noteButton != null) {
+			noteButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.reader_note, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+			noteButton.setOnClickListener(v -> openNotePopup());
+		}
+
 		if (mSearchMode == SearchMode.Lib) {
 			createLibSearchUI();
 		}
@@ -753,13 +762,21 @@ public class DocumentActivity extends Activity
 			});
 		}
 
-		// Reenstate last state if it was recorded
-		SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
-		if(content !=null){
-			mDocView.setDisplayedViewIndex(prefs.getInt("page" + getContentId(), 0));
-		}else{
-			mDocView.setDisplayedViewIndex(prefs.getInt("page" + mDocKey, 0));
-		}
+        int initialPageIndex = getIntent().getIntExtra(EXTRA_INITIAL_PAGE_INDEX, -1);
+        if (initialPageIndex >= 0 && initialPageIndex < core.countPages()) {
+            mDocView.setDisplayedViewIndex(initialPageIndex);
+            if (isPagePreviewActive) {
+                scrollToThumbnailPagePreviewIndex(initialPageIndex);
+            }
+        } else {
+            // Reenstate last state if it was recorded
+            SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
+            if(content !=null){
+                mDocView.setDisplayedViewIndex(prefs.getInt("page" + getContentId(), 0));
+            }else{
+                mDocView.setDisplayedViewIndex(prefs.getInt("page" + mDocKey, 0));
+            }
+        }
 
 
 		// GalePress don't show buttons in first open instead show a button to let user know there are buttons
@@ -1213,6 +1230,10 @@ public class DocumentActivity extends Activity
 		if (mSearchMode == SearchMode.App && mSearchPopup != null && mSearchPopup.isShowing()) {
 			mSearchPopup.dismiss();
 		}
+
+		if (mNotePopup != null && mNotePopup.isShowing()) {
+			mNotePopup.dismiss();
+		}
 	}
 
 	private void makeButtonsView() {
@@ -1564,6 +1585,45 @@ public class DocumentActivity extends Activity
 		layout.findViewById(R.id.reader_search_popup_base).setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
 
 		mSearchPopup.showAsDropDown(mTopBarSwitcher, 0, -mTopBarSwitcher.getHeight());
+	}
+
+	public void openNotePopup() {
+		RelativeLayout viewGroup = new RelativeLayout(this);
+		LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		final View layout = layoutInflater.inflate(R.layout.reader_note_popup, viewGroup);
+
+		mNotePopup = new PopupWindow(this);
+		mNotePopup.setContentView(layout);
+		mNotePopup.setWidth(RelativeLayout.LayoutParams.MATCH_PARENT);
+		mNotePopup.setHeight(RelativeLayout.LayoutParams.MATCH_PARENT);
+		mNotePopup.setFocusable(true);
+		mNotePopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+		mPopupNoteEditText = layout.findViewById(R.id.note_popup_edit_text);
+		mPopupNoteEditText.requestFocus();
+
+		View cancel = layout.findViewById(R.id.note_popup_cancel);
+		View save = layout.findViewById(R.id.note_popup_save);
+
+		cancel.setOnClickListener(v -> mNotePopup.dismiss());
+
+		save.setOnClickListener(v -> {
+            String noteText = mPopupNoteEditText.getText().toString().trim();
+            if (noteText.isEmpty()) {
+                Toast.makeText(DocumentActivity.this, getResources().getString(R.string.empty_note), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int pageIndex = mDocView.getDisplayedViewIndex();
+            if (MuPDFLibrary.getAppInstance() != null) {
+                MuPDFLibrary.getAppInstance().onNoteRequested(getContentId(), pageIndex + 1, noteText);
+                Toast.makeText(DocumentActivity.this, getResources().getString(R.string.save), Toast.LENGTH_SHORT).show();
+            }
+            mNotePopup.dismiss();
+        });
+
+		layout.findViewById(R.id.reader_note_popup).setOnClickListener(v -> mNotePopup.dismiss());
+
+		mNotePopup.showAsDropDown(mTopBarSwitcher, 0, -mTopBarSwitcher.getHeight());
 	}
 
 	public void completeSearch(boolean showNotFoundMessage) {

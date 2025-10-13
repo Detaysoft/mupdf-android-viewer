@@ -26,4 +26,7 @@
 	<string name="outline_title">Table of Contents</string>
 	<string name="more">More</string>
 	<bool name="isTablet">false</bool>
+	<string name="empty_note">Your note cannot be empty</string>
+	<string name="save">Save</string>
+	<string name="write_your_note">Write Your Note</string>
 </resources>

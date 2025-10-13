@@ -12,6 +12,7 @@ public class MuPDFLibrary extends Application {
     public interface ApplicationInterface {
          void setMuPDFActivity(DocumentActivity documentActivity);
          void fullTextSearchForReader(String searchText, String contentId, DocumentActivity documentActivity);
+         void onNoteRequested(String contentId, int pageIndex, String noteText);
         // public abstract void commitStatisticsToDB(L_Statistic statistic);
     }
 
