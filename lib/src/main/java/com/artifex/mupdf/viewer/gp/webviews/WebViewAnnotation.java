@@ -251,4 +251,86 @@ public class WebViewAnnotation extends WebView {
     }
 
      */
+    public void loadSource(String url) {
+        if (url == null) return;
+
+        if (url.contains("youtube.com") || url.contains("youtu.be")) {
+            String videoId = extractVideoId(url);
+            if (videoId != null) {
+                String html = getHtmlWrapperForYouTube(videoId);
+                // Use a valid HTTPS origin to satisfy YouTube's security checks
+                this.loadDataWithBaseURL("https://www.galepress.com", html, "text/html", "UTF-8", null);
+                return;
+            }
+        } else if (url.startsWith("file://") && (url.endsWith(".mp4") || url.endsWith(".mov") || url.endsWith(".m4v"))) {
+             String html = getHtmlWrapperForLocalVideo(url);
+             this.loadDataWithBaseURL("https://www.galepress.com", html, "text/html", "UTF-8", null);
+             return;
+        }
+
+        // Fallback for other URLs
+        this.loadUrl(url);
+    }
+
+    private String extractVideoId(String url) {
+        String videoId = null;
+        if (url != null && url.trim().length() > 0 && url.toString().startsWith("http")) {
+            String expression = "^.*((youtu.be" + "\\/)" + "|(v\\/)|(\\/u\\/w\\/)|(embed\\/)|(watch\\?))\\??v?=?([^#\\&\\?]*).*";
+            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(expression, java.util.regex.Pattern.CASE_INSENSITIVE);
+            java.util.regex.Matcher matcher = pattern.matcher(url);
+            if (matcher.matches()) {
+                String groupIndex1 = matcher.group(7);
+                if (groupIndex1 != null && groupIndex1.length() == 11)
+                    videoId = groupIndex1;
+            }
+        }
+        return videoId;
+    }
+
+    private String getHtmlWrapperForYouTube(String videoId) {
+        String html = "<!DOCTYPE html>" +
+                "<html>" +
+                "<head>" +
+                "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0'>" +
+                "<style>" +
+                "html,body{margin:0;padding:0;background:#000;height:100%;}" +
+                ".container{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}" +
+                ".video{position:relative;width:100%;height:100%;}" +
+                "iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;}" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<div class='container'>" +
+                "<div class='video'>" +
+                "<iframe src='https://www.youtube.com/embed/" + videoId + "?playsinline=1&rel=0&enablejsapi=1&origin=https://www.galepress.com' " +
+                "allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture' " +
+                "allowfullscreen></iframe>" +
+                "</div>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
+        return html;
+    }
+
+    private String getHtmlWrapperForLocalVideo(String url) {
+        String html = "<!DOCTYPE html>" +
+                "<html>" +
+                "<head>" +
+                "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0'>" +
+                "<style>" +
+                "html,body{margin:0;padding:0;background:#000;height:100%;}" +
+                ".container{display:flex;align-items:center;justify-content:center;height:100%;}" +
+                "video{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;background:#000;}" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<div class='container'>" +
+                "<video controls playsinline preload='metadata'>" +
+                "<source src='" + url + "' type='video/mp4'>" +
+                "</video>" +
+                "</div>" +
+                "</body>" +
+                "</html>";
+        return html;
+    }
 }

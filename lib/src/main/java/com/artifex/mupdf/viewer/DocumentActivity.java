@@ -632,6 +632,10 @@ public class DocumentActivity extends Activity
 			protected void onMoveToChild(int i) {
 				if (core == null)
 					return;
+
+				// GalePress Dashboard Integration: Sayfa değişimini kaydet
+				onPageChanged(i);
+
 				if (isPagePreviewActive) {
 					mRecyclerPagePreviewAdapter.setSelectedIndex(i);
 					scrollToThumbnailPagePreviewIndex(i);
@@ -808,6 +812,9 @@ public class DocumentActivity extends Activity
                 mDocView.setDisplayedViewIndex(prefs.getInt("page" + mDocKey, 0));
             }
         }
+
+		// GalePress Dashboard Integration: Start reading session
+		startReadingSession();
 
 
 		// GalePress don't show buttons in first open instead show a button to let user know there are buttons
@@ -1025,6 +1032,9 @@ public class DocumentActivity extends Activity
 	protected void onPause() {
 		super.onPause();
 
+		// GalePress Dashboard Integration: End reading session
+		endReadingSession();
+
 		if (mSearchTask != null)
 			mSearchTask.stop();
 		if (asyncThumb != null && asyncThumb.isRunning()) {
@@ -1046,6 +1056,9 @@ public class DocumentActivity extends Activity
 
 	public void onDestroy()
 	{
+		// GalePress Dashboard Integration: End reading session (güvenlik için)
+		endReadingSession();
+
 		if (asyncThumb != null && asyncThumb.isRunning()) {
 			asyncThumb.cancel();
 		}
@@ -1905,5 +1918,56 @@ public class DocumentActivity extends Activity
 			asyncThumb.cancel();
 		}
 		finish();
+	}
+
+	// ============================================
+	// GalePress Dashboard Integration - Reading Session Management
+	// Author: Yakup Can - 11.11.2025
+	// ============================================
+
+	/**
+	 * Okuma oturumu başlat
+	 */
+	private void startReadingSession() {
+		try {
+			if (MuPDFLibrary.getAppInstance() != null && content != null && mDocView != null) {
+				int currentPage = mDocView.getDisplayedViewIndex() + 1; // 1-based
+				String contentId = getContentId();
+				MuPDFLibrary.getAppInstance().onReadingSessionStart(contentId, currentPage);
+			}
+		} catch (Exception e) {
+			Log.e(APP, "Error starting reading session: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Okuma oturumunu sonlandır
+	 */
+	private void endReadingSession() {
+		try {
+			if (MuPDFLibrary.getAppInstance() != null) {
+				MuPDFLibrary.getAppInstance().onReadingSessionEnd();
+			}
+		} catch (Exception e) {
+			Log.e(APP, "Error ending reading session: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Sayfa değişimini kaydet
+	 * Bu metod mDocView.onChildSetup içinde çağrılmalı
+	 * 
+	 * @param pageIndex Sayfa indeksi (0-based)
+	 */
+	private void onPageChanged(int pageIndex) {
+		try {
+			if (content != null && MuPDFLibrary.getAppInstance() != null) {
+				String contentId = getContentId();
+				int page = pageIndex + 1; // 1-based
+				MuPDFLibrary.getAppInstance().onPageChanged(contentId, page);
+			}
+		} catch (Exception e) {
+			Log.e(APP, "Error recording page change: " + e.getMessage());
+		}
 	}
 }

@@ -622,7 +622,7 @@ public class PageView extends ViewGroup {
 						progressBar.setId(link.webViewId);
 
 					if (link.isWebAnnotation()) {
-						web.loadUrl(url);
+						web.loadSource(url);
 					}
 					addView(web);
 
@@ -657,7 +657,7 @@ public class PageView extends ViewGroup {
 
 				web.setId(atomicInteger.incrementAndGet());
 				link.webViewId = web.getId();
-				web.loadUrl(mapUrl);
+				web.loadSource(mapUrl);
 				addView(web);
 			}
 			else if(link.componentAnnotationTypeId == GPAnnotationInfo.COMPONENT_TYPE_ID_WEBLINK){
@@ -687,9 +687,38 @@ public class PageView extends ViewGroup {
                             intent.setData(Uri.parse(link.url));
                             mContext.startActivity(intent);
                         } else {
-							int number = Integer.parseInt(link.url.substring(link.url.indexOf('#') + 1, link.url.indexOf(',')));
-							if (link.url.contains("#")) {
-								((DocumentActivity) mContext).jumpToPageAtIndex(number - 1);
+							try {
+								int number = -1;
+								if (link.url.contains("#")) {
+									String afterHash = link.url.substring(link.url.indexOf('#') + 1);
+									int commaIndex = afterHash.indexOf(',');
+									if (commaIndex > 0) {
+										afterHash = afterHash.substring(0, commaIndex);
+									}
+									try {
+										number = Integer.parseInt(afterHash.trim());
+									} catch (NumberFormatException e1) {
+										number = -1;
+									}
+								}
+								if (number == -1 && link.url.contains("page=")) {
+									int pageIndex = link.url.indexOf("page=");
+									String pageStr = link.url.substring(pageIndex + 5);
+									int ampIndex = pageStr.indexOf('&');
+									if (ampIndex > 0) {
+										pageStr = pageStr.substring(0, ampIndex);
+									}
+									try {
+										number = Integer.parseInt(pageStr.trim());
+									} catch (NumberFormatException e2) {
+										number = -1;
+									}
+								}
+								if (number > 0) {
+									((DocumentActivity) mContext).jumpToPageAtIndex(number - 1);
+								}
+							} catch (Exception ex) {
+								Log.e("PageView", "Error parsing link URL: " + link.url, ex);
 							}
 						}
                     }

@@ -31,6 +31,12 @@ public class MuPDFLibrary extends Application {
 
         void removeNote(int noteId);
         // public abstract void commitStatisticsToDB(L_Statistic statistic);
+        
+        // GalePress Dashboard Integration - Reading Session Management
+        // Author: Yakup Can - 11.11.2025
+        void onReadingSessionStart(String contentId, int pageIndex);
+        void onReadingSessionEnd();
+        void onPageChanged(String contentId, int pageIndex);
     }
 
     private static ApplicationInterface myApp = null;
