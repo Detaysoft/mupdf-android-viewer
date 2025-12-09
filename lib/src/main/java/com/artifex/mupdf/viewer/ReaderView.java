@@ -25,7 +25,7 @@ import android.widget.Scroller;
 public class ReaderView
 		extends AdapterView<Adapter>
 		implements GestureDetector.OnGestureListener, ScaleGestureDetector.OnScaleGestureListener, Runnable {
-
+	private final String APP = "MuPDF";
 	/*
 	*  GalePress page display modes
 	*  TWO: display two pages
@@ -81,8 +81,8 @@ public class ReaderView
 
 	protected Stack<Integer> mHistory;
 
-	static abstract class ViewMapper {
-		abstract void applyToView(View view);
+	public interface ViewMapper {
+		void applyToView(View view);
 	}
 
 	public ReaderView(Context context) {
@@ -128,6 +128,10 @@ public class ReaderView
 
 	public void pushHistory() {
 		mHistory.push(mCurrent);
+	}
+
+	public void clearHistory() {
+		mHistory.clear();
 	}
 
 	public int getDisplayedViewIndex() {
@@ -799,6 +803,8 @@ public class ReaderView
 				if (page > 0) {
 					pushHistory();
 					setDisplayedViewIndex(page);
+				} else {
+					onTapMainDocArea();
 				}
 			} else {
 				onTapMainDocArea();

@@ -5,6 +5,7 @@ import android.os.Build;
 import android.view.View;
 
 class Stepper {
+	private final String APP = "MuPDF";
 	private final View mPoster;
 	private final Runnable mTask;
 	private boolean mPending;

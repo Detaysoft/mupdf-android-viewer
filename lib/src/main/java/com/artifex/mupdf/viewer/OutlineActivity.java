@@ -12,6 +12,7 @@ import java.util.ArrayList;
 
 public class OutlineActivity extends ListActivity
 {
+	private final String APP = "MuPDF";
 	public static class Item implements Serializable {
 		public String title;
 		public int page;
@@ -35,18 +36,21 @@ public class OutlineActivity extends ListActivity
 		adapter = new ArrayAdapter<Item>(this, android.R.layout.simple_list_item_1);
 		setListAdapter(adapter);
 
-		Bundle bundle = getIntent().getExtras();
-		int currentPage = bundle.getInt("POSITION");
-		ArrayList<Item> outline = (ArrayList<Item>)bundle.getSerializable("OUTLINE");
-		int found = -1;
-		for (int i = 0; i < outline.size(); ++i) {
-			Item item = outline.get(i);
-			if (found < 0 && item.page >= currentPage)
-				found = i;
-			adapter.add(item);
+		int idx = getIntent().getIntExtra("PALLETBUNDLE", -1);
+		Bundle bundle = Pallet.receiveBundle(idx);
+		if (bundle != null) {
+			int currentPage = bundle.getInt("POSITION");
+			ArrayList<Item> outline = (ArrayList<Item>)bundle.getSerializable("OUTLINE");
+			int found = -1;
+			for (int i = 0; i < outline.size(); ++i) {
+				Item item = outline.get(i);
+				if (found < 0 && item.page >= currentPage)
+					found = i;
+				adapter.add(item);
+			}
+			if (found >= 0)
+				setSelection(found);
 		}
-		if (found >= 0)
-			setSelection(found);
 	}
 
 	protected void onListItemClick(ListView l, View v, int position, long id) {

@@ -11,7 +11,8 @@
     <RelativeLayout
         android:id="@+id/reader"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="true">
     </RelativeLayout>
 
     <com.google.android.material.navigation.NavigationView

@@ -10,6 +10,7 @@ import com.artifex.mupdf.fitz.Page;
 import com.artifex.mupdf.fitz.Quad;
 import com.artifex.mupdf.fitz.Rect;
 import com.artifex.mupdf.fitz.RectI;
+import com.artifex.mupdf.fitz.SeekableInputStream;
 import com.artifex.mupdf.fitz.android.AndroidDrawDevice;
 import android.graphics.Bitmap;
 import android.graphics.Point;
@@ -18,10 +19,12 @@ import java.util.ArrayList;
 
 public class MuPDFCore
 {
+	private final String APP = "MuPDF";
 	private int resolution;
 	private Document doc;
 	private Outline[] outline;
 	private int pageCount = -1;
+	private boolean reflowable = false;
 	private int currentPage;
 	private Page page;
 	private float pageWidth;
@@ -34,20 +37,22 @@ public class MuPDFCore
 	private int layoutH = 504;
 	private int layoutEM = 10;
 
-	MuPDFCore(String filename) {
-		doc = Document.openDocument(filename);
+	// TODO: MuPDF upgrade
+	private MuPDFCore(Document doc) {
+		this.doc = doc;
 		doc.layout(layoutW, layoutH, layoutEM);
 		pageCount = doc.countPages();
+		reflowable = doc.isReflowable();
 		resolution = 160;
 		currentPage = -1;
 	}
 
-	MuPDFCore(byte[] buffer, String magic) {
-		doc = Document.openDocument(buffer, magic);
-		doc.layout(layoutW, layoutH, layoutEM);
-		pageCount = doc.countPages();
-		resolution = 160;
-		currentPage = -1;
+	public MuPDFCore(byte buffer[], String magic) {
+		this(Document.openDocument(buffer, magic));
+	}
+
+	public MuPDFCore(SeekableInputStream stm, String magic) {
+		this(Document.openDocument(stm, magic));
 	}
 
 
@@ -59,7 +64,7 @@ public class MuPDFCore
 		return pageCount;
 	}
 
-	synchronized boolean isReflowable() {
+	public synchronized boolean isReflowable() {
 		return doc.isReflowable();
 	}
 
@@ -85,24 +90,32 @@ public class MuPDFCore
 	}
 
 	private synchronized void gotoPage(int pageNum) {
-			/* TODO: page cache */
-			if (pageNum > pageCount-1)
-				pageNum = pageCount-1;
-			else if (pageNum < 0)
-				pageNum = 0;
-			if (pageNum != currentPage) {
-				currentPage = pageNum;
-				if (page != null)
-					page.destroy();
-				page = null;
-				if (displayList != null)
-					displayList.destroy();
-				displayList = null;
+		/* TODO: page cache */
+		if (pageNum > pageCount-1)
+			pageNum = pageCount-1;
+		else if (pageNum < 0)
+			pageNum = 0;
+		if (pageNum != currentPage) {
+			if (page != null)
+				page.destroy();
+			page = null;
+			if (displayList != null)
+				displayList.destroy();
+			displayList = null;
+			page = null;
+			pageWidth = 0;
+			pageHeight = 0;
+			currentPage = -1;
+
+			if (doc != null) {
 				page = doc.loadPage(pageNum);
 				Rect b = page.getBounds();
 				pageWidth = b.x1 - b.x0;
 				pageHeight = b.y1 - b.y0;
 			}
+
+			currentPage = pageNum;
+		}
 	}
 
 	synchronized PointF getPageSize(int pageNum) {
@@ -126,24 +139,31 @@ public class MuPDFCore
 							   int pageW, int pageH,
 							   int patchX, int patchY,
 							   Cookie cookie) {
-			gotoPage(pageNum);
-
-			if (displayList == null)
+		gotoPage(pageNum);
+		if (displayList == null && page != null)
+			try {
 				displayList = page.toDisplayList();
-
-
-				float zoom = (float)resolution / 72;
-				Matrix ctm = new Matrix(zoom, zoom);
-				RectI bbox = new RectI(page.getBounds().transform(ctm));
-				float xscale = (float)pageW / (float)(bbox.x1-bbox.x0);
-				float yscale = (float)pageH / (float)(bbox.y1-bbox.y0);
-				ctm.scale(xscale, yscale);
-
-				AndroidDrawDevice dev = new AndroidDrawDevice(bm, patchX, patchY);
-				displayList.run(dev, ctm, cookie);
-				dev.close();
-				dev.destroy();
+			} catch (Exception ex) {
+				displayList = null;
 			}
+		if (displayList == null || page == null)
+			return;
+
+		float zoom = resolution / 72;
+		Matrix ctm = new Matrix(zoom, zoom);
+		RectI bbox = new RectI(page.getBounds().transform(ctm));
+		float xscale = (float) pageW / (float) (bbox.x1 - bbox.x0);
+		float yscale = (float) pageH / (float) (bbox.y1 - bbox.y0);
+		ctm.scale(xscale, yscale);
+
+		AndroidDrawDevice dev = new AndroidDrawDevice(bm, patchX, patchY);
+		try {
+			displayList.run(dev, ctm, cookie);
+			dev.close();
+		} finally {
+			dev.destroy();
+		}
+	}
 
 
 
@@ -158,14 +178,19 @@ public class MuPDFCore
 
 	synchronized Link[] getPageLinks(int pageNum) {
 		gotoPage(pageNum);
-		return page.getLinks();
+		return page != null ? page.getLinks() : null;
 	}
+	// TODO: MuPDF upgrade
+	/*public synchronized Link[] getPageLinks(int pageNum) {
+		gotoPage(pageNum);
+		return page != null ? page.getLinks() : null;
+	}*/
 
 	public synchronized int resolveLink(Link link) {
 		return doc.pageNumberFromLocation(doc.resolveLink(link));
 	}
-
-	synchronized Quad[] searchPage(int pageNum, String text) {
+	// TODO: MuPDF upgrade
+	public synchronized Quad[][] searchPage(int pageNum, String text) {
 		gotoPage(pageNum);
 		return page.search(text);
 	}
@@ -203,9 +228,12 @@ public class MuPDFCore
 	}
 
 	synchronized boolean authenticatePassword(String password) {
-		return doc.authenticatePassword(password);
+		boolean authenticated = doc.authenticatePassword(password);
+		pageCount = doc.countPages();
+		reflowable = doc.isReflowable();
+		return authenticated;
 	}
-
+	//TODO GalePress Customization
 	/*
 	 * returns pdf page thumbnail bitmaps
 	 */

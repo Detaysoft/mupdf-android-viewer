@@ -25,5 +25,8 @@
 	<string name="toggle_reflow_mode">Toggle reflow mode</string>
 	<string name="outline_title">Inhaltsverzeichnis</string>
 	<string name="more">Mehr</string>
+	<string name="empty_note">Ihre Notiz darf nicht leer sein</string>
+	<string name="save">Retten</string>
+	<string name="write_your_note">Schreiben Sie Ihre Notiz</string>
 
 </resources>

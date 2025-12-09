@@ -4,14 +4,16 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ContentResolver;
 import android.content.Context;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -19,16 +21,11 @@ import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import androidx.core.text.HtmlCompat;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.OpenableColumns;
 import android.text.Editable;
-import android.text.Html;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
 import android.util.DisplayMetrics;
@@ -58,32 +55,47 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
-import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
+
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.core.text.HtmlCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.artifex.mupdf.fitz.SeekableInputStream;
 import com.artifex.mupdf.viewer.gp.CropAndShareActivity;
+import com.artifex.mupdf.viewer.gp.MuPDFLibrary;
 import com.artifex.mupdf.viewer.gp.OutlineAdapter;
 import com.artifex.mupdf.viewer.gp.RecyclerAdapter;
 import com.artifex.mupdf.viewer.gp.models.GPContent;
+import com.artifex.mupdf.viewer.gp.models.GPNote;
 import com.artifex.mupdf.viewer.gp.models.GPReaderSearchResult;
 import com.artifex.mupdf.viewer.gp.models.PagePreview;
 import com.artifex.mupdf.viewer.gp.util.ThemeColor;
 import com.artifex.mupdf.viewer.gp.util.ThemeFont;
 import com.artifex.mupdf.viewer.gp.util.ThemeIcon;
-import java.io.ByteArrayOutputStream;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
-
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class DocumentActivity extends Activity
 {
-	public final static String EXTRA_THEME_TYPE = "themeType";
-	public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
+    public final static String EXTRA_THEME_TYPE = "themeType";
+    public final static String EXTRA_FOREGROUND_THEME_COLOR = "foregroundThemeColor";
+    public final static String EXTRA_INITIAL_PAGE_INDEX = "initialPageIndex";
 	/* The core rendering instance */
+	private final String APP = "MuPDF";
 	enum TopBarMode {Main, Search}
 
 	/**
@@ -94,17 +106,19 @@ public class DocumentActivity extends Activity
 
 	private final int    OUTLINE_REQUEST=0;
 	private MuPDFCore    core;
-	private String       mFileName;
+	private String       mDocTitle;
+	private String       mDocKey;
 	private ReaderView   mDocView;
 	private View         mButtonsView;
 	private boolean      mButtonsVisible;
 	private EditText     mPasswordView;
-	private TextView     mFilenameView;
+	private TextView     mDocNameView;
 	private ImageButton  mSearchButton;
 	private ImageButton  mOutlineButton;
 	private ImageButton  mShareButton;
 	private ViewAnimator mTopBarSwitcher;
 	private ImageButton  mLinkButton;
+	private ImageButton  mFavoritePageButton;
 	private TopBarMode   mTopBarMode = TopBarMode.Main;
 	private ImageButton  mSearchBack;
 	private ImageButton  mSearchFwd;
@@ -128,7 +142,9 @@ public class DocumentActivity extends Activity
 	private LinearLayout mSearchProgressBaseView;
 	private LinearLayout mSearchClearBaseView;
 	private PopupWindow mSearchPopup;
+	private PopupWindow mNotePopup;
 	private EditText mPopupSearchEditText;
+	private EditText mPopupNoteEditText;
 	private String mReaderSearchWord;
 	public ProgressDialog mSearchDialog;
 
@@ -166,40 +182,86 @@ public class DocumentActivity extends Activity
 	private int mOrientation;
 	private boolean deviceType;
 
-	private MuPDFCore openFile(String path)
+	private MuPDFCore openBuffer(byte buffer[], String magic)
 	{
-		int lastSlashPos = path.lastIndexOf('/');
-		mFileName = lastSlashPos == -1
-				? path
-				: path.substring(lastSlashPos + 1);
-		System.out.println("Trying to open " + path);
-		try
-		{
-			core = new MuPDFCore(path);
-		}
-		catch (Exception | OutOfMemoryError e)
-		{
-			System.out.println(e);
-			return null;
-		}
-		//  out of memory is not an Exception, so we catch it separately.
-
-		return core;
-	}
-
-	private MuPDFCore openBuffer(byte[] buffer, String magic)
-	{
-		System.out.println("Trying to open byte buffer");
 		try
 		{
 			core = new MuPDFCore(buffer, magic);
 		}
 		catch (Exception e)
 		{
-			System.out.println(e);
+			Log.e(APP, "Error opening document buffer: " + e);
 			return null;
 		}
 		return core;
+	}
+
+	private MuPDFCore openStream(SeekableInputStream stm, String magic)
+	{
+		try
+		{
+			core = new MuPDFCore(stm, magic);
+		}
+		catch (Exception e)
+		{
+			Log.e(APP, "Error opening document stream: " + e);
+			return null;
+		}
+		return core;
+	}
+
+	private MuPDFCore openCore(Uri uri, long size, String mimetype) throws IOException {
+		ContentResolver cr = getContentResolver();
+
+		Log.i(APP, "Opening document " + uri);
+
+		InputStream is = cr.openInputStream(uri);
+		byte[] buf = null;
+		int used = -1;
+		try {
+			final int limit = 8 * 1024 * 1024;
+			if (size < 0) { // size is unknown
+				buf = new byte[limit];
+				used = is.read(buf);
+				boolean atEOF = is.read() == -1;
+				if (used < 0 || (used == limit && !atEOF)) // no or partial data
+					buf = null;
+			} else if (size <= limit) { // size is known and below limit
+				buf = new byte[(int) size];
+				used = is.read(buf);
+				if (used < 0 || used < size) // no or partial data
+					buf = null;
+			}
+			if (buf != null && buf.length != used) {
+				byte[] newbuf = new byte[used];
+				System.arraycopy(buf, 0, newbuf, 0, used);
+				buf = newbuf;
+			}
+		} catch (OutOfMemoryError e) {
+			buf = null;
+		} finally {
+			is.close();
+		}
+
+		if (buf != null) {
+			Log.i(APP, "  Opening document from memory buffer of size " + buf.length);
+			// MIME type kontrolü ve düzeltmesi
+			if (mimetype == null || mimetype.isEmpty()) {
+				mimetype = "application/pdf";
+				Log.i(APP, "  MIME type was null/empty, setting to: " + mimetype);
+			}
+			Log.i(APP, "  Using MIME type: " + mimetype);
+			return openBuffer(buf, mimetype);
+		} else {
+			Log.i(APP, "  Opening document from stream");
+			// MIME type kontrolü ve düzeltmesi
+			if (mimetype == null || mimetype.isEmpty()) {
+				mimetype = "application/pdf";
+				Log.i(APP, "  MIME type was null/empty, setting to: " + mimetype);
+			}
+			Log.i(APP, "  Using MIME type: " + mimetype);
+			return openStream(new ContentInputStream(cr, uri, size), mimetype);
+		}
 	}
 
 	/** Called when the activity is first created. */
@@ -231,10 +293,27 @@ public class DocumentActivity extends Activity
 
 		ProgressRecycler = findViewById(R.id.ProgressRecycler);
 
-		asyncThumb = new AsyncThumb();
-		if (asyncThumb.getStatus() != AsyncTask.Status.RUNNING){
-			asyncThumb.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		// Core objesi hazır olduğunda AsyncThumb'ı başlat
+		if (core != null) {
+			asyncThumb = new AsyncThumb();
+			asyncThumb.execute();
+		} else {
+			Log.e(APP, "Core is null, cannot start AsyncThumb");
 		}
+	}
+
+	// TODO: MuPDF upgrade
+	private void showCannotOpenDialog(String reason) {
+		Resources res = getResources();
+		AlertDialog alert = mAlertBuilder.create();
+		setTitle(String.format(Locale.ROOT, res.getString(R.string.cannot_open_document_Reason), reason));
+		alert.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss),
+				new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						finish();
+					}
+				});
+		alert.show();
 	}
 
 	private void saveImage(Bitmap finalBitmap, int index, String ContentId) {
@@ -263,56 +342,104 @@ public class DocumentActivity extends Activity
 	}
 
 
-	@SuppressLint("StaticFieldLeak")
-	public class AsyncThumb extends  AsyncTask<Void,Void,Void>{
+	public class AsyncThumb {
+		private final ExecutorService executor;
+		private final Handler mainHandler;
+		private volatile boolean isRunning = false;
+		private volatile boolean isCancelled = false;
 
-		@Override
-		protected Void doInBackground(Void... voids) {
-			final PagePreview[] ppArray = new PagePreview[core.countPages()];
-			String root = getFilesDir().getAbsolutePath();
-			String Cache = root + "/saved_images/" + getContentId();
-
-			File file = new File(Cache);
-			if(!file.exists()){
-				ArrayList<Bitmap> bm_images = core.getPDFThumbnails(120, 180);
-				for (int i = 0; i < core.countPages(); i++){
-					ppArray[i] = new PagePreview(i, bm_images.get(i));
-					saveImage(bm_images.get(i), i, getContentId());
-				}
-			}
-			else {
-				for (int i = 0; i < core.countPages(); i++) {
-					Bitmap bitmap = readImage(i);
-					ppArray[i] = new PagePreview(i, bitmap);
-				}
-			}
-			mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
-			return null;
+		public AsyncThumb() {
+			executor = Executors.newSingleThreadExecutor();
+			mainHandler = new Handler(Looper.getMainLooper());
 		}
 
-		@Override
-		protected void onPostExecute(Void aVoid) {
-			super.onPostExecute(aVoid);
-			isPagePreviewActive = true;
-			mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
-			int displayingPageIndex = mDocView.getDisplayedViewIndex();
-			mRecyclerPagePreviewAdapter.setSelectedIndex(displayingPageIndex);
-			scrollToThumbnailPagePreviewIndex(displayingPageIndex);
-			ProgressRecycler.setVisibility(View.INVISIBLE);
+		public void execute() {
+			isRunning = true;
+			isCancelled = false;
+
+			executor.execute(() -> {
+				// Core objesi null kontrolü
+				if (core == null) {
+					Log.e(APP, "Core is null, cannot create page previews");
+					return;
+				}
+				if (isCancelled) return;
+				if (isFinishing() || isDestroyed()) {
+					return;
+				}
+                final PagePreview[] ppArray = new PagePreview[core.countPages()];
+                String root = getFilesDir().getAbsolutePath();
+                String Cache = root + "/saved_images/" + getContentId();
+
+                File file = new File(Cache);
+				if(!file.exists()){
+					try {
+						ArrayList<Bitmap> bm_images = core.getPDFThumbnails(120, 180);
+						for (int i = 0; i < core.countPages() && !isCancelled; i++){
+							ppArray[i] = new PagePreview(i, bm_images.get(i));
+							saveImage(bm_images.get(i), i, getContentId());
+						}
+					} catch (IllegalArgumentException e) {
+						Log.e(APP, "Invalid bitmap dimension while generating thumbnails: " + e);
+						mainHandler.post(() -> {
+							if (ProgressRecycler != null) {
+								ProgressRecycler.setVisibility(View.INVISIBLE);
+							}
+						});
+						isRunning = false;
+						return;
+					}
+				}
+                else {
+                    for (int i = 0; i < core.countPages() && !isCancelled; i++) {
+                        Bitmap bitmap = readImage(i);
+                        ppArray[i] = new PagePreview(i, bitmap);
+                    }
+                }
+                // Ana thread'de UI işlemlerini yap
+                mainHandler.post(() -> {
+                    if (!isCancelled) {
+						mRecyclerPagePreviewAdapter = new RecyclerAdapter(ppArray, DocumentActivity.this);
+						isPagePreviewActive = true;
+						if (mRecyclerPagePreview != null) {
+							mRecyclerPagePreview.setAdapter(mRecyclerPagePreviewAdapter);
+						}
+						int displayingPageIndex = mDocView.getDisplayedViewIndex();
+						mRecyclerPagePreviewAdapter.setSelectedIndex(displayingPageIndex);
+						scrollToThumbnailPagePreviewIndex(displayingPageIndex);
+						if (ProgressRecycler != null) {
+							ProgressRecycler.setVisibility(View.INVISIBLE);
+						}
+                    }
+                    isRunning = false;
+                });
+            });
+		}
+
+		public void cancel() {
+			if (isRunning) {
+				isCancelled = true;
+				executor.shutdownNow();
+				isRunning = false;
+			}
+		}
+
+		public boolean isRunning() {
+			return isRunning;
 		}
 	}
 
 
 	private void prepareDocument(Bundle savedInstanceState) {
 		if (core == null) {
-			if (savedInstanceState != null && savedInstanceState.containsKey("FileName")) {
-				mFileName = savedInstanceState.getString("FileName");
+			if (savedInstanceState != null && savedInstanceState.containsKey("DocTitle")) {
+				mDocTitle = savedInstanceState.getString("DocTitle");
 			}
 		}
 
 		if (core == null) {
 			Intent intent = getIntent();
-
+			//TODO GalePress Customization
 			//---------- GalePress Integration [Start]
 
 			// if application instance registered, use its methods for search, set etc.
@@ -358,44 +485,67 @@ public class DocumentActivity extends Activity
 
 			//---------- GalePress Integration [End]
 
-			byte[] buffer;
+			SeekableInputStream file;
 
 			if (Intent.ACTION_VIEW.equals(intent.getAction())) {
 				Uri uri = intent.getData();
-				System.out.println("URI to open is: " + uri);
-				if (uri.getScheme().equals("file")) {
-					String path = uri.getPath();
-					core = openFile(path);
-				} else {
-					try {
-						InputStream is = getContentResolver().openInputStream(uri);
-						int len;
-						ByteArrayOutputStream bufferStream = new ByteArrayOutputStream();
-						byte[] data = new byte[16384];
-						while ((len = is.read(data, 0, data.length)) != -1) {
-							bufferStream.write(data, 0, len);
-						}
-						bufferStream.flush();
-						buffer = bufferStream.toByteArray();
-						is.close();
-					}
-					catch (IOException e) {
-						String reason = e.toString();
-						Resources res = getResources();
-						AlertDialog alert = mAlertBuilder.create();
-						setTitle(String.format(Locale.ROOT, res.getString(R.string.cannot_open_document_Reason), reason));
-						alert.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss),
-								new DialogInterface.OnClickListener() {
-									public void onClick(DialogInterface dialog, int which) {
-										finish();
-									}
-								});
-						alert.show();
-						return;
-					}
-					core = openBuffer(buffer, intent.getType());
+				String mimetype = getIntent().getType();
+				if (uri == null)  {
+					showCannotOpenDialog("No document uri to open");
+					return;
 				}
-				SearchTaskResult.set(null);
+				mDocKey = uri.toString();
+
+				Log.i(APP, "OPEN URI " + uri.toString());
+				Log.i(APP, "  MAGIC (Intent) " + mimetype);
+
+				mDocTitle = null;
+				long size = -1;
+				Cursor cursor = null;
+
+				try {
+					cursor = getContentResolver().query(uri, null, null, null, null);
+					if (cursor != null && cursor.moveToFirst()) {
+						int idx;
+
+						idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+						if (idx >= 0 && cursor.getType(idx) == Cursor.FIELD_TYPE_STRING)
+							mDocTitle = cursor.getString(idx);
+
+						idx = cursor.getColumnIndex(OpenableColumns.SIZE);
+						if (idx >= 0 && cursor.getType(idx) == Cursor.FIELD_TYPE_INTEGER)
+							size = cursor.getLong(idx);
+
+						if (size == 0)
+							size = -1;
+					}
+				} catch (Exception x) {
+					// Ignore any exception and depend on default values for title
+					// and size (unless one was decoded
+				} finally {
+					if (cursor != null)
+						cursor.close();
+				}
+
+				Log.i(APP, "  NAME " + mDocTitle);
+				Log.i(APP, "  SIZE " + size);
+
+				if (mimetype == null || mimetype.equals("application/octet-stream")) {
+					mimetype = getContentResolver().getType(uri);
+					Log.i(APP, "  MAGIC (Resolved) " + mimetype);
+				}
+				if (mimetype == null || mimetype.equals("application/octet-stream")) {
+					mimetype = mDocTitle;
+					Log.i(APP, "  MAGIC (Filename) " + mimetype);
+				}
+
+				try {
+					core = openCore(uri, size, mimetype);
+					SearchTaskResult.set(null);
+				} catch (Exception x) {
+					showCannotOpenDialog(x.toString());
+					return;
+				}
 			}
 			if (core != null && core.needsPassword()) {
 				requestPassword(savedInstanceState);
@@ -482,10 +632,26 @@ public class DocumentActivity extends Activity
 			protected void onMoveToChild(int i) {
 				if (core == null)
 					return;
-                if(isPagePreviewActive){
-                    mRecyclerPagePreviewAdapter.setSelectedIndex(i);
-                    scrollToThumbnailPagePreviewIndex(i);
-                }
+
+				// GalePress Dashboard Integration: Sayfa değişimini kaydet
+				onPageChanged(i);
+
+				if (isPagePreviewActive) {
+					mRecyclerPagePreviewAdapter.setSelectedIndex(i);
+					scrollToThumbnailPagePreviewIndex(i);
+				}
+				// sayfa değiştiğinde not butonu görünürlüğünü güncelle
+				updateAllNotesButtonVisibility();
+				try {
+					if (MuPDFLibrary.getAppInstance() != null && mFavoritePageButton != null) {
+						boolean isFav = MuPDFLibrary.getAppInstance().isPageFavorite(getContentId(), i + 1);
+						Drawable icon = ThemeIcon.getInstance().paintIcon(getApplicationContext(),
+								isFav ? R.drawable.selected_fav_icon : R.drawable.fav_icon,
+								ThemeIcon.OPPOSITE_THEME_COLOR_FILTER);
+						mFavoritePageButton.setBackground(icon);
+					}
+				} catch (Exception ignored) {
+				}
 				super.onMoveToChild(i);
 			}
 
@@ -518,6 +684,7 @@ public class DocumentActivity extends Activity
 			@Override
 			public void onConfigurationChanged(Configuration newConfig) {
 				super.onConfigurationChanged(newConfig);
+				//TODO GalePress Customization
 			// GalePress integration: manage layout of custom views on orientation change
 				if (mOrientation != newConfig.orientation && deviceType) {
 					relayoutCustomViews(mCurrent);
@@ -551,12 +718,12 @@ public class DocumentActivity extends Activity
 		// Set the file-name text
 		String docTitle = core.getTitle();
 		if (docTitle != null)
-			mFilenameView.setText(docTitle);
+			mDocNameView.setText(docTitle);
 		else
-			mFilenameView.setText(mFileName);
+			mDocNameView.setText(mDocTitle);
 
 		//---------- GalePress recycle page preview [Start]
-
+		//TODO GalePress Customization
 		mRecylerPagePreviewLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
 
 		mRecyclerPagePreview = mButtonsView.findViewById(R.id.recyclerPagePreview);
@@ -572,6 +739,12 @@ public class DocumentActivity extends Activity
 				searchModeOn();
 			}
 		});
+
+		ImageButton noteButton = mButtonsView.findViewById(R.id.noteButton);
+		if (noteButton != null) {
+			noteButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.ic_edit_note, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+			noteButton.setOnClickListener(v -> openNotePopup());
+		}
 
 		if (mSearchMode == SearchMode.Lib) {
 			createLibSearchUI();
@@ -624,13 +797,24 @@ public class DocumentActivity extends Activity
 			});
 		}
 
-		// Reenstate last state if it was recorded
-		SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
-		if(content !=null){
-			mDocView.setDisplayedViewIndex(prefs.getInt("page" + getContentId(), 0));
-		}else{
-			mDocView.setDisplayedViewIndex(prefs.getInt("page" + mFileName, 0));
-		}
+        int initialPageIndex = getIntent().getIntExtra(EXTRA_INITIAL_PAGE_INDEX, -1);
+        if (initialPageIndex >= 0 && initialPageIndex < core.countPages()) {
+            mDocView.setDisplayedViewIndex(initialPageIndex);
+            if (isPagePreviewActive) {
+                scrollToThumbnailPagePreviewIndex(initialPageIndex);
+            }
+        } else {
+            // Reenstate last state if it was recorded
+            SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
+            if(content !=null){
+                mDocView.setDisplayedViewIndex(prefs.getInt("page" + getContentId(), 0));
+            }else{
+                mDocView.setDisplayedViewIndex(prefs.getInt("page" + mDocKey, 0));
+            }
+        }
+
+		// GalePress Dashboard Integration: Start reading session
+		startReadingSession();
 
 
 		// GalePress don't show buttons in first open instead show a button to let user know there are buttons
@@ -641,7 +825,7 @@ public class DocumentActivity extends Activity
 			searchModeOn();
 
 		//---------- GalePress Integration - Drawer [Start]
-
+		//TODO GalePress Customization
 		// Stick the document view and the buttons overlay into a parent view
 		if (core.hasOutline()) {
 
@@ -712,7 +896,7 @@ public class DocumentActivity extends Activity
 
 		//---------- GalePress Integration - Drawer [End]
 	}
-
+	//TODO GalePress Customization
 	public void createLibSearchUI() {
 		mButtonsView.findViewById(R.id.searchBar).setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
 
@@ -811,7 +995,7 @@ public class DocumentActivity extends Activity
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == OUTLINE_REQUEST) {
-			if (resultCode >= RESULT_FIRST_USER) {
+			if (resultCode >= RESULT_FIRST_USER && mDocView != null) {
 				mDocView.pushHistory();
 				mDocView.setDisplayedViewIndex(resultCode - RESULT_FIRST_USER);
 			}
@@ -825,15 +1009,16 @@ public class DocumentActivity extends Activity
 
 		mOrientation = getResources().getConfiguration().orientation;
 
-		if (mFileName != null && mDocView != null) {
-			outState.putString("FileName", mFileName);
+		if (mDocKey != null && mDocView != null) {
+			if (mDocTitle != null)
+				outState.putString("FileName", mDocTitle);
 			// Store current page in the prefs against the file name,
 			// so that we can pick it up each time the file is loaded
 			// Other info is needed only for screen-orientation change,
 			// so it can go in the bundle
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
-			edit.putInt("page"+mFileName, mDocView.getDisplayedViewIndex());
+			edit.putInt("page"+mDocKey, mDocView.getDisplayedViewIndex());
 			edit.apply();
 		}
 		if (!mButtonsVisible)
@@ -847,9 +1032,15 @@ public class DocumentActivity extends Activity
 	protected void onPause() {
 		super.onPause();
 
+		// GalePress Dashboard Integration: End reading session
+		endReadingSession();
+
 		if (mSearchTask != null)
 			mSearchTask.stop();
-		if (mFileName != null && mDocView != null) {
+		if (asyncThumb != null && asyncThumb.isRunning()) {
+			asyncThumb.cancel();
+		}
+		if (mDocKey != null && mDocView != null) {
 			SharedPreferences prefs = getPreferences(Context.MODE_PRIVATE);
 			SharedPreferences.Editor edit = prefs.edit();
 			if(content !=null){
@@ -865,9 +1056,16 @@ public class DocumentActivity extends Activity
 
 	public void onDestroy()
 	{
+		// GalePress Dashboard Integration: End reading session (güvenlik için)
+		endReadingSession();
+
+		if (asyncThumb != null && asyncThumb.isRunning()) {
+			asyncThumb.cancel();
+		}
 		if (mDocView != null) {
 			mDocView.applyToChildren(new ReaderView.ViewMapper() {
-				void applyToView(View view) {
+				@Override
+				public void applyToView(View view) {
 					((PageView)view).releaseBitmaps();
 				}
 			});
@@ -960,8 +1158,8 @@ public class DocumentActivity extends Activity
 				public void onAnimationRepeat(Animation animation) {}
 
 				public void onAnimationEnd(Animation animation) {
-					if(!isPagePreviewActive)
-					ProgressRecycler.setVisibility(View.VISIBLE);
+					if (!isPagePreviewActive)
+						ProgressRecycler.setVisibility(View.VISIBLE);
 				}
 			});
 			mReaderShowPageThumbnailsButton.startAnimation(anim);
@@ -1082,11 +1280,15 @@ public class DocumentActivity extends Activity
 		if (mSearchMode == SearchMode.App && mSearchPopup != null && mSearchPopup.isShowing()) {
 			mSearchPopup.dismiss();
 		}
+
+		if (mNotePopup != null && mNotePopup.isShowing()) {
+			mNotePopup.dismiss();
+		}
 	}
 
 	private void makeButtonsView() {
 		mButtonsView = getLayoutInflater().inflate(R.layout.document_activity, null);
-		mFilenameView = mButtonsView.findViewById(R.id.docNameText);
+		mDocNameView = mButtonsView.findViewById(R.id.docNameText);
 		mRecyclerPagePreview = mButtonsView.findViewById(R.id.recyclerPagePreview); // GP recycler view
 		mSearchButton = mButtonsView.findViewById(R.id.searchButton);
 		mOutlineButton = mButtonsView.findViewById(R.id.outlineButton);
@@ -1129,9 +1331,133 @@ public class DocumentActivity extends Activity
 		// GP table of contens
 		mOutlineButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(),R.drawable.reader_contents,ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
 
-		// GP switcher
+		ImageButton allNotesButton = mButtonsView.findViewById(R.id.allNotesButton);
+		if (allNotesButton != null) {
+			allNotesButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.ic_all_notes, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+			allNotesButton.setOnClickListener(v -> openAllNotes());
+			updateAllNotesButtonVisibility();
+		}
+
+		try {
+			mFavoritePageButton = new ImageButton(this);
+			mFavoritePageButton.setBackground(ThemeIcon.getInstance().paintIcon(getApplicationContext(), R.drawable.fav_icon, ThemeIcon.OPPOSITE_THEME_COLOR_FILTER));
+			ViewGroup noteBase = mButtonsView.findViewById(R.id.favButonBase);
+			if (noteBase != null) {
+				noteBase.addView(mFavoritePageButton, 0);
+			}
+			mFavoritePageButton.setOnClickListener(v -> {
+				int pageIndex = mDocView.getDisplayedViewIndex();
+				boolean isFavNow = false;
+				try {
+					if (MuPDFLibrary.getAppInstance() != null) {
+						boolean isFav = MuPDFLibrary.getAppInstance().isPageFavorite(getContentId(), pageIndex + 1);
+						MuPDFLibrary.getAppInstance().onFavoritePageRequested(getContentId(), pageIndex + 1, !isFav);
+						isFavNow = !isFav;
+					}
+				} catch (Exception ignored) {
+				}
+				Drawable favIcon = ThemeIcon.getInstance().paintIcon(getApplicationContext(),
+						isFavNow ? R.drawable.selected_fav_icon : R.drawable.fav_icon,
+						ThemeIcon.OPPOSITE_THEME_COLOR_FILTER);
+				mFavoritePageButton.setBackground(favIcon);
+			});
+		} catch (Exception ignored) {
+		}
 		mTopBarSwitcher.setBackgroundColor(ThemeColor.getInstance().getStrongThemeColor());
 
+	}
+
+	private void openAllNotes() {
+		try {
+			LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			View content = inflater.inflate(R.layout.all_notes_bottom_sheet, null);
+			BottomSheetDialog bottomSheet = new BottomSheetDialog(this, com.google.android.material.R.style.Theme_Design_Light_BottomSheetDialog);
+			bottomSheet.setContentView(content);
+			TextView notesTitle = content.findViewById(R.id.notesTitle);
+			if (notesTitle != null && mDocView != null) {
+				int pageNum = mDocView.getDisplayedViewIndex() + 1;
+				notesTitle.setText("Sayfa " + pageNum);
+			}
+
+			// Close butonunu tema ikonuyla boyama: ApplicationThemeColor varsa onu kullan, yoksa ThemeIcon'a düş
+			ImageButton savedClose = content.findViewById(R.id.saved_close);
+			if (savedClose != null) {
+				boolean applied = false;
+				try {
+					Class<?> cls = Class.forName("ak.detaysoft.galepress.util.ApplicationThemeColor");
+					Method getInstance = cls.getMethod("getInstance");
+					Object instance = getInstance.invoke(null);
+					java.lang.reflect.Field cancelField = cls.getField("CANCEL_CONTENT_DOWNLOAD");
+					int cancelConst = cancelField.getInt(null);
+					Method getPopupBtn = cls.getMethod("getPopupButtonDrawable", Context.class, int.class);
+					Drawable drawable = (Drawable) getPopupBtn.invoke(instance, getApplicationContext(), cancelConst);
+					if (drawable != null) {
+						savedClose.setBackground(drawable);
+						applied = true;
+					}
+				} catch (Throwable ignored) {
+				}
+				if (!applied) {
+					try {
+						Drawable drawable = ThemeIcon.getInstance()
+								.paintIcon(getApplicationContext(), R.drawable.ic_close_white_24dp, ThemeIcon.THEME_COLOR_FILTER);
+						savedClose.setBackground(drawable);
+					} catch (Exception ignored) {
+					}
+				}
+				savedClose.setOnClickListener(v1 -> {
+					if (bottomSheet.isShowing()) bottomSheet.dismiss();
+				});
+			}
+			// RecyclerView bağlama
+			RecyclerView rv = content.findViewById(R.id.rvAllNotes);
+			rv.setLayoutManager(new LinearLayoutManager(this));
+			List<GPNote> notes = new ArrayList<>();
+			try {
+				if (MuPDFLibrary.getAppInstance() != null) {
+					int pageIndex = mDocView.getDisplayedViewIndex() + 1;
+					notes = MuPDFLibrary.getAppInstance().getNotes(getContentId(), pageIndex);
+				}
+			} catch (Exception ignored) {
+			}
+			rv.setAdapter(new AllNotesAdapter(notes, this));
+			bottomSheet.show();
+			// tam ekran yüksekliği
+			android.view.View bottomSheetInternal = bottomSheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+			if (bottomSheetInternal != null) {
+				android.view.ViewGroup.LayoutParams lp = bottomSheetInternal.getLayoutParams();
+				lp.height = android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+				bottomSheetInternal.setLayoutParams(lp);
+				bottomSheetInternal.requestLayout();
+				BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheetInternal);
+				behavior.setPeekHeight(getResources().getDisplayMetrics().heightPixels);
+				behavior.setSkipCollapsed(true);
+				behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+			}
+		} catch (Exception e) {
+			Toast.makeText(this, "Notlar açılamadı", Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	private void updateAllNotesButtonVisibility() {
+		ImageButton allNotesButton = mButtonsView.findViewById(R.id.allNotesButton);
+		if (allNotesButton == null) return;
+		try {
+			if (MuPDFLibrary.getAppInstance() != null && content != null && mDocView != null) {
+				int pageIndex = mDocView.getDisplayedViewIndex() + 1;
+				int count = MuPDFLibrary.getAppInstance().getNoteCount(getContentId(), pageIndex);
+				allNotesButton.setVisibility(count > 0 ? View.VISIBLE : View.GONE);
+			} else {
+				allNotesButton.setVisibility(View.GONE);
+			}
+		} catch (Exception e) {
+			allNotesButton.setVisibility(View.GONE);
+		}
+	}
+
+	// AllNotesAdapter için callback metodu
+	public void onNoteDeleted() {
+		updateAllNotesButtonVisibility();
 	}
 
 	private void showKeyboard() {
@@ -1435,6 +1761,47 @@ public class DocumentActivity extends Activity
 		mSearchPopup.showAsDropDown(mTopBarSwitcher, 0, -mTopBarSwitcher.getHeight());
 	}
 
+	public void openNotePopup() {
+		RelativeLayout viewGroup = new RelativeLayout(this);
+		LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		final View layout = layoutInflater.inflate(R.layout.reader_note_popup, viewGroup);
+
+		mNotePopup = new PopupWindow(this);
+		mNotePopup.setContentView(layout);
+		mNotePopup.setWidth(RelativeLayout.LayoutParams.MATCH_PARENT);
+		mNotePopup.setHeight(RelativeLayout.LayoutParams.MATCH_PARENT);
+		mNotePopup.setFocusable(true);
+		mNotePopup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+
+		mPopupNoteEditText = layout.findViewById(R.id.note_popup_edit_text);
+		mPopupNoteEditText.requestFocus();
+
+		View cancel = layout.findViewById(R.id.note_popup_cancel);
+		View save = layout.findViewById(R.id.note_popup_save);
+
+		cancel.setOnClickListener(v -> mNotePopup.dismiss());
+
+		save.setOnClickListener(v -> {
+            String noteText = mPopupNoteEditText.getText().toString().trim();
+            if (noteText.isEmpty()) {
+                Toast.makeText(DocumentActivity.this, getResources().getString(R.string.empty_note), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int pageIndex = mDocView.getDisplayedViewIndex();
+            if (MuPDFLibrary.getAppInstance() != null) {
+                MuPDFLibrary.getAppInstance().onNoteRequested(getContentId(), pageIndex + 1, noteText);
+                Toast.makeText(DocumentActivity.this, getResources().getString(R.string.save), Toast.LENGTH_SHORT).show();
+                // Not eklendikten sonra buton görünürlüğünü güncelle
+                updateAllNotesButtonVisibility();
+            }
+            mNotePopup.dismiss();
+        });
+
+		layout.findViewById(R.id.reader_note_popup).setOnClickListener(v -> mNotePopup.dismiss());
+
+		mNotePopup.showAsDropDown(mTopBarSwitcher, 0, -mTopBarSwitcher.getHeight());
+	}
+
 	public void completeSearch(boolean showNotFoundMessage) {
 		if(mSearchPopup == null || !mSearchPopup.isShowing())
 			return;
@@ -1536,15 +1903,71 @@ public class DocumentActivity extends Activity
 
 	@Override
 	protected void onStop() {
+		if (asyncThumb != null && asyncThumb.isRunning()) {
+			asyncThumb.cancel();
+		}
 		if (MuPDFLibrary.getAppInstance() != null) {
 			MuPDFLibrary.getAppInstance().setMuPDFActivity(null);
 		}
 		super.onStop();
 	}
-
+	// TODO: MuPDF upgrade
 	@Override
 	public void onBackPressed() {
-		asyncThumb.cancel(true);
+		if (asyncThumb != null && asyncThumb.isRunning()) {
+			asyncThumb.cancel();
+		}
 		finish();
+	}
+
+	// ============================================
+	// GalePress Dashboard Integration - Reading Session Management
+	// Author: Yakup Can - 11.11.2025
+	// ============================================
+
+	/**
+	 * Okuma oturumu başlat
+	 */
+	private void startReadingSession() {
+		try {
+			if (MuPDFLibrary.getAppInstance() != null && content != null && mDocView != null) {
+				int currentPage = mDocView.getDisplayedViewIndex() + 1; // 1-based
+				String contentId = getContentId();
+				MuPDFLibrary.getAppInstance().onReadingSessionStart(contentId, currentPage);
+			}
+		} catch (Exception e) {
+			Log.e(APP, "Error starting reading session: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Okuma oturumunu sonlandır
+	 */
+	private void endReadingSession() {
+		try {
+			if (MuPDFLibrary.getAppInstance() != null) {
+				MuPDFLibrary.getAppInstance().onReadingSessionEnd();
+			}
+		} catch (Exception e) {
+			Log.e(APP, "Error ending reading session: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Sayfa değişimini kaydet
+	 * Bu metod mDocView.onChildSetup içinde çağrılmalı
+	 * 
+	 * @param pageIndex Sayfa indeksi (0-based)
+	 */
+	private void onPageChanged(int pageIndex) {
+		try {
+			if (content != null && MuPDFLibrary.getAppInstance() != null) {
+				String contentId = getContentId();
+				int page = pageIndex + 1; // 1-based
+				MuPDFLibrary.getAppInstance().onPageChanged(contentId, page);
+			}
+		} catch (Exception e) {
+			Log.e(APP, "Error recording page change: " + e.getMessage());
+		}
 	}
 }

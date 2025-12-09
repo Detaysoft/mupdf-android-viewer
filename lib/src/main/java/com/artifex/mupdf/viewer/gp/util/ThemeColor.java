@@ -10,7 +10,7 @@ public class ThemeColor {
     private int themeType = 1;
     private String foregroundColor = "#2980B9";
 
-    private final String DARK_THEME_COLOR = "#222222";
+    private final String DARK_THEME_COLOR = "#000000";
     private final String LIGHT_THEME_COLOR = "#ffffff";
     private final String STRONG_DARK_THEME_COLOR = "#000000";
     private final String STRONG_LIGHT_THEME_COLOR = "#ffffff";

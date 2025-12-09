@@ -3,6 +3,9 @@ package com.artifex.mupdf.viewer.gp;
 import android.app.Application;
 
 import com.artifex.mupdf.viewer.DocumentActivity;
+import com.artifex.mupdf.viewer.gp.models.GPNote;
+
+import java.util.List;
 
 
 public class MuPDFLibrary extends Application {
@@ -10,9 +13,30 @@ public class MuPDFLibrary extends Application {
     public final static String TAG = "MuPDFLibrary";
 
     public interface ApplicationInterface {
-         void setMuPDFActivity(DocumentActivity documentActivity);
-         void fullTextSearchForReader(String searchText, String contentId, DocumentActivity documentActivity);
+        void setMuPDFActivity(DocumentActivity documentActivity);
+
+        void fullTextSearchForReader(String searchText, String contentId, DocumentActivity documentActivity);
+
+        void onNoteRequested(String contentId, int pageIndex, String noteText);
+
+        boolean isPageFavorite(String contentId, int pageIndex);
+
+        void onFavoritePageRequested(String contentId, int pageIndex, boolean add);
+
+        List<GPNote> getNotes(String contentId, int pageIndex);
+
+        int getNoteCount(String contentId, int pageIndex);
+
+        void updateNoteText(int noteId, String newText);
+
+        void removeNote(int noteId);
         // public abstract void commitStatisticsToDB(L_Statistic statistic);
+        
+        // GalePress Dashboard Integration - Reading Session Management
+        // Author: Yakup Can - 11.11.2025
+        void onReadingSessionStart(String contentId, int pageIndex);
+        void onReadingSessionEnd();
+        void onPageChanged(String contentId, int pageIndex);
     }
 
     private static ApplicationInterface myApp = null;

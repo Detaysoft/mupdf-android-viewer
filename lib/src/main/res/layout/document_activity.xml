@@ -3,6 +3,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
+	android:keepScreenOn="true"
+	android:fitsSystemWindows="true"
 	>
 
 	<ViewAnimator
@@ -82,6 +84,25 @@
 			</LinearLayout>
 
 			<LinearLayout
+				android:id="@+id/allNotesButtonBase"
+				android:layout_width="35dp"
+				android:layout_height="35dp"
+				android:layout_centerVertical="true"
+				android:layout_marginLeft="10dp"
+				android:layout_toRightOf="@id/outlineButtonBase"
+				android:gravity="center"
+				android:orientation="vertical">
+
+				<ImageButton
+					android:id="@+id/allNotesButton"
+					android:layout_width="25dp"
+					android:layout_height="25dp"
+					android:background="@android:color/transparent"
+					android:clickable="false"
+					android:contentDescription="@string/outline_title" />
+			</LinearLayout>
+
+			<LinearLayout
 				android:id="@+id/searchButtonBase"
 				android:layout_width="35dp"
 				android:layout_height="35dp"
@@ -116,6 +137,40 @@
 					android:layout_height="wrap_content"
 					android:background="@android:color/transparent"
 					/>
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/noteButtonBase"
+				android:layout_width="25dp"
+				android:layout_height="25dp"
+				android:layout_centerVertical="true"
+				android:layout_marginLeft="5dp"
+				android:layout_toLeftOf="@id/searchButtonBase"
+				android:gravity="center"
+				android:orientation="vertical">
+
+				<ImageButton
+					android:id="@+id/noteButton"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:background="@android:color/transparent" />
+			</LinearLayout>
+
+			<LinearLayout
+				android:id="@+id/favButonBase"
+				android:layout_width="25dp"
+				android:layout_height="25dp"
+				android:layout_centerVertical="true"
+				android:layout_marginEnd="5dp"
+				android:layout_toStartOf="@id/noteButtonBase"
+				android:gravity="center"
+				android:orientation="vertical">
+
+				<ImageButton
+					android:id="@+id/favoritePageButton"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:background="@android:color/transparent" />
 			</LinearLayout>
 
 		</RelativeLayout>

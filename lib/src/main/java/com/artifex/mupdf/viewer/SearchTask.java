@@ -29,6 +29,7 @@ class ProgressDialogX extends ProgressDialog {
 }
 
 public abstract class SearchTask {
+	private final String APP = "MuPDF";
 	private static final int SEARCH_PROGRESS_DELAY = 200;
 	private final Context mContext;
 	private final MuPDFCore mCore;
@@ -78,7 +79,8 @@ public abstract class SearchTask {
 
 				while (0 <= index && index < mCore.countPages() && !isCancelled()) {
 					publishProgress(index);
-					Quad[] searchHits = mCore.searchPage(index, text);
+					// TODO: MuPDF upgrade
+					Quad searchHits[][] = mCore.searchPage(index, text);
 
 					if (searchHits != null && searchHits.length > 0)
 						return new SearchTaskResult(text, index, searchHits);
